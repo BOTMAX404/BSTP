@@ -3,305 +3,488 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Zihad Broker — Professional Binance Spot Trading Terminal with 4-Line Bot">
+<meta name="description" content="Zihad Broker — Binance Spot Trading Terminal">
 <meta name="author" content="MD GOLAM SAROWER ZIHAD">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="theme-color" content="#000408">
-<!-- GitHub Pages: all resources loaded from CDN, no local deps -->
 <title>Zihad Broker — Binance Spot Trading Terminal</title>
 <script>
-// CDN loader — tries 3 sources with fallback (GitHub Pages / HTTPS)
 (function(){
-  var urls = [
-    'https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js',
-    'https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/lightweight-charts/4.2.0/lightweight-charts.standalone.production.min.js'
-  ];
-  var i = 0;
-  function load() {
-    if (i >= urls.length) {
-      document.addEventListener('DOMContentLoaded', function(){
-        var el = document.getElementById('chart');
-        if (el) el.innerHTML = '<div style="padding:30px;color:#ff4520;font-family:monospace;font-size:13px;">⚠ Chart library failed to load from all CDNs.<br>Please check your internet connection and reload.</div>';
-      });
-      return;
-    }
-    var s = document.createElement('script');
-    s.src = urls[i++];
-    s.crossOrigin = 'anonymous';
-    s.onerror = load;
-    document.head.appendChild(s);
-  }
-  load();
+  var urls=['https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js','https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js','https://cdnjs.cloudflare.com/ajax/libs/lightweight-charts/4.2.0/lightweight-charts.standalone.production.min.js'];
+  var i=0;function load(){if(i>=urls.length)return;var s=document.createElement('script');s.src=urls[i++];s.crossOrigin='anonymous';s.onerror=load;document.head.appendChild(s);}load();
 })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --ink:#000408;--ink1:#05090f;--ink2:#080e1a;--ink3:#0c1422;--ink4:#111d2e;--ink5:#18263c;
   --acid:#c8ff00;--acid2:#a8d900;--sky:#00cfff;--fire:#ff4520;--gold:#ffc400;--lilac:#b06eff;
   --t0:#f0f6ff;--t1:#8899b0;--t2:#445566;--t3:#2a3a4e;
-  --r:6px;--r2:10px;--r3:16px;
   --mono:'JetBrains Mono',monospace;--sans:'Space Grotesk',sans-serif;
+  --bdr:1px solid var(--ink3);
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-html,body{height:100%;background:var(--ink);color:var(--t0);font-family:var(--sans);font-size:13px;overflow:hidden;}
-input,select,button{font-family:inherit;}
+html,body{height:100%;background:var(--ink);color:var(--t0);font-family:var(--sans);font-size:12px;overflow:hidden;}
+input,select,button{font-family:inherit;font-size:12px;}
 ::-webkit-scrollbar{width:3px;height:3px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--ink5);border-radius:2px;}
 
-/* ── GATE ── */
-#gate{position:fixed;inset:0;z-index:9999;background:var(--ink);display:flex;align-items:center;justify-content:center;}
-#gate .gg{position:absolute;inset:0;background:linear-gradient(var(--ink3) 1px,transparent 1px),linear-gradient(90deg,var(--ink3) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 70% 70% at 50% 50%,black 20%,transparent 100%);pointer-events:none;}
-#gate .gs{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(200,255,0,.06) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
-.gpanel{position:relative;z-index:1;width:440px;}
-.gbrand{margin-bottom:36px;}
-.gbrand .gw{font-size:11px;font-weight:600;letter-spacing:.3em;color:var(--t2);text-transform:uppercase;margin-bottom:10px;}
-.gbrand h1{font-size:48px;font-weight:700;line-height:1;letter-spacing:-.03em;}
+/* ══════════════ GATE ══════════════ */
+#gate{
+  position:fixed;inset:0;z-index:9999;background:var(--ink);
+  display:flex;align-items:center;justify-content:center;
+}
+#gate .gg{position:absolute;inset:0;background:linear-gradient(var(--ink3) 1px,transparent 1px),linear-gradient(90deg,var(--ink3) 1px,transparent 1px);background-size:52px 52px;mask-image:radial-gradient(ellipse 60% 60% at 50% 50%,black 10%,transparent 100%);pointer-events:none;}
+#gate .gs{position:absolute;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(200,255,0,.05) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
+.gpanel{position:relative;z-index:1;width:420px;}
+.gbrand{margin-bottom:30px;}
+.gw{font-size:10px;font-weight:600;letter-spacing:.3em;color:var(--t2);text-transform:uppercase;margin-bottom:8px;}
+.gbrand h1{font-size:44px;font-weight:700;line-height:1;letter-spacing:-.03em;}
 .gbrand h1 em{color:var(--acid);font-style:normal;}
-.gbrand p{margin-top:8px;font-size:11px;color:var(--t2);font-family:var(--mono);letter-spacing:.06em;}
-.gtabs{display:flex;gap:6px;margin-bottom:24px;}
-.gtab{flex:1;padding:9px;border-radius:var(--r);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border:1px solid var(--ink4);background:var(--ink2);color:var(--t2);transition:.2s;text-align:center;}
+.gbrand p{margin-top:7px;font-size:10px;color:var(--t2);font-family:var(--mono);letter-spacing:.08em;}
+.gtabs{display:flex;gap:5px;margin-bottom:22px;}
+.gtab{flex:1;padding:9px;border-radius:5px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border:1px solid var(--ink4);background:var(--ink2);color:var(--t2);transition:.2s;text-align:center;}
 .gtab.active.demo{border-color:var(--acid);color:var(--acid);background:rgba(200,255,0,.06);}
 .gtab.active.live{border-color:var(--fire);color:var(--fire);background:rgba(255,69,32,.06);}
-.gfl{margin-bottom:14px;}
-.gfl label{display:block;font-size:9px;font-weight:700;letter-spacing:.15em;color:var(--t2);text-transform:uppercase;margin-bottom:6px;}
+.gfl{margin-bottom:12px;}
+.gfl label{display:block;font-size:9px;font-weight:700;letter-spacing:.15em;color:var(--t2);text-transform:uppercase;margin-bottom:5px;}
 .giw{position:relative;}
-.gi{width:100%;background:var(--ink2);border:1px solid var(--ink4);color:var(--t0);font-family:var(--mono);font-size:12px;padding:11px 40px 11px 14px;border-radius:var(--r);outline:none;transition:.2s;}
-.gi:focus{border-color:var(--sky);background:var(--ink3);}
+.gi{width:100%;background:var(--ink2);border:1px solid var(--ink4);color:var(--t0);font-family:var(--mono);font-size:12px;padding:10px 38px 10px 12px;border-radius:5px;outline:none;transition:.2s;}
+.gi:focus{border-color:var(--sky);}
 .gi::placeholder{color:var(--t3);}
-.geye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--t2);font-size:14px;padding:2px;transition:.2s;}
+.geye{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--t2);font-size:13px;padding:2px;transition:.2s;}
 .geye:hover{color:var(--sky);}
-#gerr{display:none;padding:10px 12px;background:rgba(255,69,32,.1);border:1px solid rgba(255,69,32,.3);border-radius:var(--r);font-family:var(--mono);font-size:11px;color:var(--fire);margin-bottom:14px;line-height:1.6;}
-#gspin{display:none;text-align:center;margin-bottom:10px;}
-.sring{width:22px;height:22px;border-radius:50%;border:2px solid var(--ink4);border-top-color:var(--acid);animation:spin .7s linear infinite;display:inline-block;}
+#gerr{display:none;padding:9px 12px;background:rgba(255,69,32,.1);border:1px solid rgba(255,69,32,.3);border-radius:5px;font-family:var(--mono);font-size:11px;color:var(--fire);margin-bottom:12px;line-height:1.6;white-space:pre-line;}
+#gspin{display:none;text-align:center;margin-bottom:8px;}
+.sring{width:20px;height:20px;border-radius:50%;border:2px solid var(--ink4);border-top-color:var(--acid);animation:spin .7s linear infinite;display:inline-block;}
 @keyframes spin{to{transform:rotate(360deg)}}
 #gstatus{font-family:var(--mono);font-size:10px;color:var(--t2);text-align:center;min-height:14px;margin-bottom:8px;}
-.gcta{width:100%;padding:14px;background:var(--acid);color:var(--ink);border:none;border-radius:var(--r);font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:.2s;}
+.gcta{width:100%;padding:12px;background:var(--acid);color:var(--ink);border:none;border-radius:5px;font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:.2s;}
 .gcta:hover:not(:disabled){background:var(--acid2);transform:translateY(-1px);}
 .gcta:disabled{opacity:.4;cursor:not-allowed;transform:none;}
-.ghint{margin-top:18px;padding:12px 14px;border-radius:var(--r);border:1px solid var(--ink4);background:var(--ink2);font-size:10px;font-family:var(--mono);color:var(--t2);line-height:1.9;}
+.ghint{margin-top:16px;padding:11px 13px;border-radius:5px;border:1px solid var(--ink4);background:var(--ink2);font-size:10px;font-family:var(--mono);color:var(--t2);line-height:1.9;}
 .ghint b{color:var(--gold);}
-.gcredit{margin-top:20px;text-align:center;font-size:10px;font-family:var(--mono);color:var(--t3);letter-spacing:.05em;}
+.gcredit{margin-top:18px;text-align:center;font-size:10px;font-family:var(--mono);color:var(--t3);letter-spacing:.05em;}
 .gcredit b{color:var(--acid);}
 
-/* ── APP ── */
+/* ══════════════ APP SHELL ══════════════ */
 #app{display:none;height:100vh;flex-direction:column;}
 
-/* ── TOPBAR ── */
-#tb{height:46px;flex-shrink:0;background:var(--ink1);border-bottom:1px solid var(--ink3);display:flex;align-items:center;padding:0 16px;gap:12px;}
-.tbl{font-size:14px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;}
-.tbl b{color:var(--acid);}
-.tsep{width:1px;height:20px;background:var(--ink4);flex-shrink:0;}
-.tcc{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:var(--r);background:var(--ink3);border:1px solid transparent;}
-.tcc span{font-size:9px;color:var(--t2);font-family:var(--mono);}
-.tcc select{background:none;border:none;color:var(--t0);font-family:var(--mono);font-size:12px;font-weight:500;outline:none;cursor:pointer;}
-.tcc select option{background:var(--ink2);}
-#tbprice{font-family:var(--mono);font-size:19px;font-weight:700;letter-spacing:-.02em;transition:.15s;}
+/* ── TOPBAR (Binance-style) ── */
+#topbar{
+  height:48px;flex-shrink:0;
+  background:var(--ink1);border-bottom:var(--bdr);
+  display:flex;align-items:center;
+}
+/* Left brand zone */
+.tb-brand-zone{
+  width:220px;flex-shrink:0;
+  display:flex;align-items:center;gap:0;
+  border-right:var(--bdr);height:100%;padding:0 14px;
+}
+.tb-logo{font-size:14px;font-weight:700;letter-spacing:-.01em;}
+.tb-logo b{color:var(--acid);}
+.tb-mode-badge{
+  margin-left:8px;font-size:9px;font-weight:700;letter-spacing:.1em;
+  padding:2px 7px;border-radius:3px;text-transform:uppercase;
+}
+.tb-mode-badge.demo{background:rgba(200,255,0,.15);color:var(--acid);}
+.tb-mode-badge.live{background:rgba(255,69,32,.15);color:var(--fire);}
+
+/* Center info strip (like Binance's price ticker bar) */
+.tb-center{
+  flex:1;display:flex;align-items:center;gap:0;height:100%;
+  border-right:var(--bdr);padding:0 16px;overflow:hidden;
+}
+.tb-sym-picker{
+  display:flex;align-items:center;gap:6px;
+  padding-right:16px;border-right:var(--bdr);height:100%;
+}
+.tb-sym-picker select{
+  background:transparent;border:none;color:var(--t0);
+  font-family:var(--mono);font-size:14px;font-weight:700;
+  outline:none;cursor:pointer;
+}
+.tb-sym-picker select option{background:var(--ink2);}
+.tb-tf-picker{
+  display:flex;align-items:center;gap:4px;
+  padding:0 14px;border-right:var(--bdr);height:100%;
+}
+.tb-tf-picker span{font-size:10px;color:var(--t2);}
+.tb-tf-picker select{background:transparent;border:none;color:var(--t0);font-family:var(--mono);font-size:12px;outline:none;cursor:pointer;}
+.tb-tf-picker select option{background:var(--ink2);}
+.tb-price-block{padding:0 16px;border-right:var(--bdr);height:100%;display:flex;flex-direction:column;justify-content:center;}
+#tbprice{font-family:var(--mono);font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1;}
 #tbprice.up{color:var(--acid);}
 #tbprice.dn{color:var(--fire);}
-#tbpct{font-family:var(--mono);font-size:11px;color:var(--t2);}
-.tmode{display:flex;border-radius:var(--r);overflow:hidden;border:1px solid var(--ink4);}
-.tmode button{padding:5px 14px;border:none;background:transparent;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;color:var(--t2);transition:.15s;}
-.tmode button.active.demo{background:rgba(200,255,0,.12);color:var(--acid);}
-.tmode button.active.live{background:rgba(255,69,32,.12);color:var(--fire);}
-.tconn{display:flex;align-items:center;gap:5px;}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--t3);}
-.dot.on{background:var(--acid);box-shadow:0 0 8px var(--acid);}
+#tbpct{font-family:var(--mono);font-size:10px;color:var(--t2);margin-top:2px;}
+.tb-stats{display:flex;align-items:center;gap:20px;padding:0 16px;overflow:hidden;}
+.tb-stat{display:flex;flex-direction:column;gap:2px;}
+.tb-stat-l{font-size:9px;color:var(--t2);}
+.tb-stat-v{font-family:var(--mono);font-size:11px;color:var(--t0);}
+
+/* Right controls zone */
+.tb-right-zone{
+  display:flex;align-items:center;gap:8px;
+  height:100%;padding:0 14px;flex-shrink:0;
+}
+.tb-mode-toggle{display:flex;border-radius:4px;overflow:hidden;border:1px solid var(--ink4);}
+.tb-mode-toggle button{padding:4px 12px;border:none;background:transparent;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;color:var(--t2);transition:.15s;}
+.tb-mode-toggle button.active.demo{background:rgba(200,255,0,.12);color:var(--acid);}
+.tb-mode-toggle button.active.live{background:rgba(255,69,32,.12);color:var(--fire);}
+.tb-conn{display:flex;align-items:center;gap:5px;padding:0 10px;border-left:var(--bdr);border-right:var(--bdr);height:100%;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--t3);}
+.dot.on{background:var(--acid);box-shadow:0 0 6px var(--acid);}
 .dot.off{background:var(--fire);}
-.tconntxt{font-family:var(--mono);font-size:10px;color:var(--t2);}
-.tsp{flex:1;}
-.tbtn{padding:5px 12px;border-radius:var(--r);font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;transition:.15s;border:1px solid var(--ink4);background:transparent;color:var(--t1);}
-.tbtn:hover{border-color:var(--sky);color:var(--sky);}
-.tbtn.danger{border-color:rgba(255,69,32,.35);color:var(--fire);}
-.tbtn.danger:hover{background:rgba(255,69,32,.1);}
+.tconntxt{font-family:var(--mono);font-size:10px;color:var(--t2);white-space:nowrap;}
+.tb-action-btn{
+  padding:5px 11px;border-radius:4px;font-size:11px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:.15s;
+  border:1px solid var(--ink4);background:transparent;color:var(--t1);white-space:nowrap;
+}
+.tb-action-btn:hover{border-color:var(--sky);color:var(--sky);}
+.tb-action-btn.exit{border-color:rgba(255,69,32,.4);color:var(--fire);}
+.tb-action-btn.exit:hover{background:rgba(255,69,32,.1);}
 
-/* ── WORKSPACE ── */
-#ws{flex:1;display:grid;grid-template-columns:218px 1fr 268px;grid-template-rows:1fr 136px;min-height:0;}
+/* ══════════════ MAIN WORKSPACE ══════════════ */
+/* Exact Binance 3-col layout: narrow-left | chart | trading-panel */
+#workspace{
+  flex:1;min-height:0;
+  display:grid;
+  grid-template-columns:220px 1fr 280px;
+  grid-template-rows:1fr 130px;
+}
 
-/* ── LEFT ── */
-#left{grid-row:1/3;background:var(--ink1);border-right:1px solid var(--ink3);overflow-y:auto;display:flex;flex-direction:column;padding-bottom:30px;}
-.rs{padding:12px 13px;}
-.rs+.rs{border-top:1px solid var(--ink3);}
-.rl{font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--t2);margin-bottom:9px;display:flex;align-items:center;gap:6px;}
-.rl::after{content:'';flex:1;height:1px;background:var(--ink3);}
-.sr{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.025);}
-.sr:last-child{border-bottom:none;}
-.srl{font-size:10px;color:var(--t2);}
-.srr{font-family:var(--mono);font-size:11px;color:var(--t0);}
-.srr.up{color:var(--acid);}
-.srr.dn{color:var(--fire);}
+/* ── LEFT PANEL (info sidebar like Binance's order book column) ── */
+#left{
+  grid-row:1/3;
+  background:var(--ink1);
+  border-right:var(--bdr);
+  overflow-y:auto;
+  display:flex;flex-direction:column;
+}
 
-/* api bar */
-.abar{display:flex;align-items:center;gap:6px;padding:7px 9px;background:var(--ink2);border-radius:var(--r);border:1px solid var(--ink4);margin-bottom:7px;}
-.abartxt{flex:1;font-family:var(--mono);font-size:10px;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.akrow{display:flex;align-items:center;gap:4px;padding:5px 8px;background:var(--ink2);border:1px solid var(--ink4);border-radius:var(--r);margin-bottom:4px;}
-.akl{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--t2);width:24px;flex-shrink:0;}
-.akv{flex:1;font-family:var(--mono);font-size:10px;color:var(--sky);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.akv.ns{color:var(--t3);}
-.akrow button{background:none;border:none;cursor:pointer;color:var(--t2);font-size:12px;padding:0;transition:.15s;}
-.akrow button:hover{color:var(--sky);}
-#etog{width:100%;margin-top:6px;padding:6px;border-radius:var(--r);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border:1px dashed var(--ink4);background:transparent;color:var(--t2);cursor:pointer;transition:.15s;}
-#etog:hover{border-color:var(--sky);color:var(--sky);}
-#eform{display:none;padding:8px;background:var(--ink2);border:1px solid var(--ink4);border-radius:var(--r);margin-top:6px;}
-#eform.open{display:block;}
-.ef{margin-bottom:7px;}
-.ef label{display:block;font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--t2);text-transform:uppercase;margin-bottom:4px;}
-.eiw{position:relative;}
-.ei{width:100%;background:var(--ink);border:1px solid var(--ink4);color:var(--t0);font-family:var(--mono);font-size:11px;padding:6px 28px 6px 8px;border-radius:var(--r);outline:none;transition:.15s;}
-.ei:focus{border-color:var(--sky);}
-.ei::placeholder{color:var(--t3);}
-.eieye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--t2);font-size:12px;padding:0;transition:.15s;}
-.eieye:hover{color:var(--sky);}
-.eacts{display:flex;gap:4px;margin-top:8px;}
-.eab{flex:1;padding:6px 4px;border-radius:var(--r);font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:.15s;border:1px solid;}
-.eab.save{border-color:var(--acid);color:var(--acid);background:rgba(200,255,0,.06);}
-.eab.save:hover{background:var(--acid);color:var(--ink);}
-.eab.test{border-color:var(--sky);color:var(--sky);background:rgba(0,207,255,.06);}
-.eab.test:hover{background:var(--sky);color:var(--ink);}
-.eab.clr{border-color:var(--fire);color:var(--fire);background:rgba(255,69,32,.06);}
-.eab.clr:hover{background:var(--fire);color:#fff;}
-.eab.can{border-color:var(--ink4);color:var(--t2);background:transparent;}
-.eab.can:hover{border-color:var(--t2);}
+/* Section title row (like Binance's section headers) */
+.sec-head{
+  padding:8px 12px 6px;
+  font-size:11px;font-weight:600;color:var(--t0);
+  border-bottom:var(--bdr);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.sec-head-label{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--t2);}
+.sec-head-val{font-family:var(--mono);font-size:11px;}
 
-/* bot block */
-.bblk{text-align:center;padding:14px;background:var(--ink2);border-radius:var(--r2);border:1px solid var(--ink4);}
-.borb{width:40px;height:40px;border-radius:50%;background:var(--ink3);display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px;border:2px solid var(--ink4);transition:.3s;}
-.borb.run{border-color:var(--acid);background:rgba(200,255,0,.08);box-shadow:0 0 24px rgba(200,255,0,.2);animation:op 2s infinite;}
-.borb.pos{border-color:var(--gold);background:rgba(255,196,0,.08);box-shadow:0 0 24px rgba(255,196,0,.2);}
-@keyframes op{0%,100%{box-shadow:0 0 24px rgba(200,255,0,.2)}50%{box-shadow:0 0 40px rgba(200,255,0,.45)}}
-.borbi{width:10px;height:10px;border-radius:50%;background:var(--t3);}
-.borb.run .borbi{background:var(--acid);box-shadow:0 0 6px var(--acid);}
+.sec-body{padding:8px 12px;}
+
+/* Data rows (Binance-style dense rows) */
+.dr{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:4px 0;border-bottom:1px solid rgba(255,255,255,.025);
+}
+.dr:last-child{border-bottom:none;}
+.dr-l{font-size:10px;color:var(--t2);}
+.dr-v{font-family:var(--mono);font-size:11px;color:var(--t0);}
+.dr-v.up{color:var(--acid);}
+.dr-v.dn{color:var(--fire);}
+.dr-v.dim{color:var(--t3);}
+
+/* API status mini bar */
+.api-status-bar{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 12px;
+  border-bottom:var(--bdr);
+  background:var(--ink2);
+  flex-shrink:0;
+}
+.api-status-bar .dot{width:7px;height:7px;}
+.api-bar-txt{font-family:var(--mono);font-size:10px;color:var(--t1);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.api-mini-btn{background:none;border:none;cursor:pointer;color:var(--t2);font-size:10px;padding:2px 5px;border-radius:3px;transition:.15s;white-space:nowrap;}
+.api-mini-btn:hover{color:var(--sky);background:var(--ink3);}
+
+/* Inline API edit form */
+.api-edit-panel{
+  padding:8px 12px;border-bottom:var(--bdr);
+  background:var(--ink);display:none;
+}
+.api-edit-panel.open{display:block;}
+.aep-field{margin-bottom:7px;}
+.aep-field label{display:block;font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--t2);text-transform:uppercase;margin-bottom:4px;}
+.aep-iw{position:relative;}
+.aep-i{width:100%;background:var(--ink2);border:1px solid var(--ink4);color:var(--t0);font-family:var(--mono);font-size:11px;padding:6px 26px 6px 8px;border-radius:4px;outline:none;transition:.15s;}
+.aep-i:focus{border-color:var(--sky);}
+.aep-i::placeholder{color:var(--t3);}
+.aep-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--t2);font-size:11px;padding:0;transition:.15s;}
+.aep-eye:hover{color:var(--sky);}
+.aep-row{display:flex;gap:4px;margin-top:7px;}
+.aep-btn{flex:1;padding:5px 4px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:.15s;border:1px solid;}
+.aep-btn.sv{border-color:var(--acid);color:var(--acid);background:rgba(200,255,0,.06);}
+.aep-btn.sv:hover{background:var(--acid);color:var(--ink);}
+.aep-btn.ts{border-color:var(--sky);color:var(--sky);background:rgba(0,207,255,.06);}
+.aep-btn.ts:hover{background:var(--sky);color:var(--ink);}
+.aep-btn.cl{border-color:var(--fire);color:var(--fire);background:rgba(255,69,32,.06);}
+.aep-btn.cl:hover{background:var(--fire);color:#fff;}
+.aep-btn.cn{border-color:var(--ink4);color:var(--t2);background:transparent;}
+.aep-btn.cn:hover{border-color:var(--t2);}
+
+/* Bot status orb */
+.bot-orb-wrap{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-bottom:var(--bdr);flex-shrink:0;
+}
+.borb{
+  width:32px;height:32px;border-radius:50%;
+  border:2px solid var(--ink4);background:var(--ink3);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:.3s;
+}
+.borb.run{border-color:var(--acid);background:rgba(200,255,0,.08);box-shadow:0 0 16px rgba(200,255,0,.2);animation:op 2s infinite;}
+.borb.pos{border-color:var(--gold);background:rgba(255,196,0,.08);box-shadow:0 0 16px rgba(255,196,0,.2);}
+@keyframes op{0%,100%{box-shadow:0 0 16px rgba(200,255,0,.2)}50%{box-shadow:0 0 28px rgba(200,255,0,.45)}}
+.borbi{width:9px;height:9px;border-radius:50%;background:var(--t3);}
+.borb.run .borbi{background:var(--acid);}
 .borb.pos .borbi{background:var(--gold);}
-.bstate{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t1);margin-bottom:3px;}
-.bphase{font-family:var(--mono);font-size:10px;color:var(--t2);}
-#ss{width:100%;margin-top:12px;padding:9px;border-radius:var(--r);font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border:none;cursor:pointer;transition:.2s;}
+.bot-text{flex:1;min-width:0;}
+.bstate{font-size:11px;font-weight:700;color:var(--t0);}
+.bphase{font-family:var(--mono);font-size:9px;color:var(--t2);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#ss{
+  padding:6px 10px;border-radius:4px;font-family:var(--sans);font-size:10px;
+  font-weight:700;letter-spacing:.07em;text-transform:uppercase;border:none;cursor:pointer;transition:.2s;flex-shrink:0;
+}
 #ss.go{background:var(--acid);color:var(--ink);}
 #ss.go:hover{background:var(--acid2);}
 #ss.stop{background:rgba(255,69,32,.12);color:var(--fire);border:1px solid rgba(255,69,32,.3);}
 #ss.stop:hover{background:rgba(255,69,32,.22);}
 
-/* line status */
-.lsg{display:flex;flex-direction:column;gap:4px;}
-.lsgr{display:flex;align-items:center;gap:6px;padding:5px 7px;background:var(--ink2);border-radius:var(--r);border:1px solid var(--ink4);}
+/* Line status rows */
+.lsg-row{
+  display:flex;align-items:center;gap:7px;
+  padding:4px 12px;border-bottom:1px solid rgba(255,255,255,.02);
+}
 .ldot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:var(--t3);}
 .ldot.on.buy{background:var(--acid);}
 .ldot.on.pass{background:var(--gold);}
 .ldot.on.s1{background:var(--sky);}
 .ldot.on.s2{background:var(--lilac);}
-.lsn{font-size:10px;color:var(--t2);flex:1;}
+.lsg-name{font-size:10px;color:var(--t2);flex:1;}
 .lsv{font-family:var(--mono);font-size:10px;color:var(--t0);}
 .lsv.ns{color:var(--t3);}
 
-/* ── CHART ── */
-#ca{background:var(--ink);border-bottom:1px solid var(--ink3);position:relative;}
+/* ── CHART (center — dominant like Binance) ── */
+#ca{
+  background:var(--ink);
+  border-bottom:var(--bdr);
+  position:relative;
+}
 #chart{width:100%;height:100%;}
 
-/* ── RIGHT ── */
-#right{grid-row:1/3;background:var(--ink1);border-left:1px solid var(--ink3);overflow-y:auto;padding-bottom:24px;}
-.rhead{position:sticky;top:0;z-index:10;padding:11px 13px 0;background:var(--ink1);}
-.rhtitle{font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--t2);padding-bottom:11px;border-bottom:1px solid var(--ink3);}
-.rbody{padding:11px 13px;display:flex;flex-direction:column;gap:11px;}
-
-/* line cards */
-.lc{border-radius:var(--r2);border:1px solid var(--ink4);overflow:hidden;}
-.lch{padding:8px 11px;display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--ink4);}
-.lcs{width:3px;height:16px;border-radius:2px;flex-shrink:0;}
-.lcs.buy{background:var(--acid);}
-.lcs.pass{background:var(--gold);}
-.lcs.s1{background:var(--sky);}
-.lcs.s2{background:var(--lilac);}
-.lcn{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;flex:1;}
-.lcn.buy{color:var(--acid);}
-.lcn.pass{color:var(--gold);}
-.lcn.s1{color:var(--sky);}
-.lcn.s2{color:var(--lilac);}
-.lcb{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:20px;border:1px solid var(--ink4);color:var(--t3);}
-.lcb.on.buy{border-color:var(--acid);color:var(--acid);}
-.lcb.on.pass{border-color:var(--gold);color:var(--gold);}
-.lcb.on.s1{border-color:var(--sky);color:var(--sky);}
-.lcb.on.s2{border-color:var(--lilac);color:var(--lilac);}
-.lcbody{padding:9px 11px;background:var(--ink2);}
-.ir{display:flex;gap:5px;align-items:center;margin-bottom:6px;}
-.ir:last-child{margin-bottom:0;}
-.fi{flex:1;background:var(--ink);border:1px solid var(--ink4);color:var(--t0);font-family:var(--mono);font-size:11px;padding:7px 8px;border-radius:var(--r);outline:none;transition:.15s;}
-.fi:focus{border-color:var(--sky);}
-.fi::placeholder{color:var(--t3);}
-.fis{background:var(--ink);border:1px solid var(--ink4);color:var(--t1);font-family:var(--mono);font-size:11px;padding:7px 5px;border-radius:var(--r);outline:none;max-width:60px;cursor:pointer;}
-.fis option{background:var(--ink2);}
-.ab{padding:6px 9px;border-radius:var(--r);font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;transition:.15s;border:1px solid;white-space:nowrap;}
-.ab.buy{border-color:var(--acid);color:var(--acid);}
-.ab.buy:hover{background:var(--acid);color:var(--ink);}
-.ab.pass{border-color:var(--gold);color:var(--gold);}
-.ab.pass:hover{background:var(--gold);color:var(--ink);}
-.ab.s1{border-color:var(--sky);color:var(--sky);}
-.ab.s1:hover{background:var(--sky);color:var(--ink);}
-.ab.s2{border-color:var(--lilac);color:var(--lilac);}
-.ab.s2:hover{background:var(--lilac);color:var(--ink);}
-.ab.g{border-color:var(--ink4);color:var(--t2);}
-.ab.g:hover{border-color:var(--t2);}
-.islab{font-size:10px;color:var(--t2);white-space:nowrap;}
-.hint{font-size:9px;color:var(--t2);font-family:var(--mono);line-height:1.7;margin-top:5px;}
-.hint b{color:var(--gold);}
-.trails{font-family:var(--mono);font-size:9px;color:var(--sky);margin-top:4px;}
-.cbr{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--ink);border-radius:var(--r);border:1px solid var(--ink4);cursor:pointer;margin-bottom:6px;}
-.cbbox{width:13px;height:13px;border-radius:3px;border:1px solid var(--ink4);background:var(--ink2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;}
-.cbbox.on{background:var(--lilac);border-color:var(--lilac);}
-.cbbox.on::after{content:'✓';font-size:9px;color:#fff;}
-.cblabel{font-size:10px;color:var(--t1);}
-.tsc{background:var(--ink2);border:1px solid var(--ink4);border-radius:var(--r2);padding:9px 11px;}
-.manrow{display:flex;gap:6px;}
-.manb{flex:1;padding:9px;border-radius:var(--r);font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:.2s;border:1px solid;}
-.manb.b{border-color:rgba(200,255,0,.35);color:var(--acid);background:rgba(200,255,0,.06);}
-.manb.b:hover{background:rgba(200,255,0,.14);}
-.manb.s{border-color:rgba(255,69,32,.35);color:var(--fire);background:rgba(255,69,32,.06);}
-.manb.s:hover{background:rgba(255,69,32,.14);}
-
-/* ── LOG ── */
-#log{background:var(--ink1);border-top:1px solid var(--ink3);grid-column:2/3;overflow-y:auto;padding:7px 13px;}
-.logbar{display:flex;align-items:center;gap:10px;margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid var(--ink3);}
-.logtitle{font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--t2);}
-.logclr{padding:2px 8px;border-radius:var(--r);border:1px solid var(--ink4);background:transparent;color:var(--t2);font-size:9px;cursor:pointer;transition:.15s;}
-.logclr:hover{border-color:var(--t2);}
-.le{display:flex;gap:9px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.02);align-items:baseline;}
-.let{font-family:var(--mono);font-size:9px;color:var(--t3);flex-shrink:0;}
-.lek{font-family:var(--mono);font-size:9px;font-weight:700;flex-shrink:0;width:38px;}
+/* ── TRADE LOG (bottom under chart) ── */
+#logpanel{
+  background:var(--ink1);
+  border-top:var(--bdr);
+  overflow-y:auto;
+  padding:0;
+  grid-column:2/3;
+}
+.log-header{
+  position:sticky;top:0;z-index:5;
+  display:flex;align-items:center;gap:8px;
+  padding:5px 12px;background:var(--ink1);
+  border-bottom:var(--bdr);
+}
+.log-title{font-size:10px;font-weight:600;color:var(--t0);}
+.log-tab{font-size:10px;font-weight:600;color:var(--t2);padding:3px 10px;border-radius:3px;cursor:default;}
+.log-tab.active{color:var(--acid);border-bottom:2px solid var(--acid);}
+.log-clr{margin-left:auto;padding:2px 8px;border-radius:3px;border:1px solid var(--ink4);background:transparent;color:var(--t2);font-size:9px;cursor:pointer;transition:.15s;}
+.log-clr:hover{border-color:var(--t2);}
+#logent{padding:2px 0;}
+.le{display:flex;gap:8px;padding:2px 12px;border-bottom:1px solid rgba(255,255,255,.02);align-items:baseline;}
+.let{font-family:var(--mono);font-size:9px;color:var(--t3);flex-shrink:0;width:56px;}
+.lek{font-family:var(--mono);font-size:9px;font-weight:700;flex-shrink:0;width:36px;}
 .lek.BUY{color:var(--acid);}
 .lek.SELL{color:var(--fire);}
 .lek.INFO{color:var(--sky);}
 .lek.WARN{color:var(--gold);}
 .lem{font-size:10px;color:var(--t1);flex:1;}
-.lep{font-family:var(--mono);font-size:9px;color:var(--sky);}
-.lex{font-family:var(--mono);font-size:9px;color:var(--t3);}
+.lep{font-family:var(--mono);font-size:9px;color:var(--sky);flex-shrink:0;}
+.lex{font-family:var(--mono);font-size:9px;color:var(--t3);flex-shrink:0;}
+
+/* ── RIGHT PANEL (Binance-style trading form) ── */
+#right{
+  grid-row:1/3;
+  background:var(--ink1);
+  border-left:var(--bdr);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+
+/* Right panel tabs (like Binance's Limit/Market/Stop) */
+.rp-tabs{
+  display:flex;align-items:center;
+  border-bottom:var(--bdr);
+  flex-shrink:0;background:var(--ink1);
+  padding:0 12px;
+}
+.rp-tab{
+  padding:10px 8px 8px;font-size:11px;font-weight:600;
+  color:var(--t2);cursor:pointer;border-bottom:2px solid transparent;
+  margin-right:2px;transition:.15s;white-space:nowrap;
+}
+.rp-tab.active{color:var(--acid);border-bottom-color:var(--acid);}
+.rp-tab:hover:not(.active){color:var(--t0);}
+
+/* Right panel scrollable body */
+.rp-body{flex:1;overflow-y:auto;padding:0;}
+
+/* Amount row (like Binance's price/amount inputs) */
+.rp-section{padding:10px 12px;border-bottom:var(--bdr);}
+.rp-section:last-child{border-bottom:none;}
+.rp-label{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t2);margin-bottom:7px;}
+
+/* Binance-style input with label inside border */
+.bnc-inp-wrap{
+  display:flex;align-items:center;
+  background:var(--ink);border:1px solid var(--ink4);
+  border-radius:4px;overflow:hidden;margin-bottom:6px;
+  transition:.15s;
+}
+.bnc-inp-wrap:focus-within{border-color:var(--sky);}
+.bnc-inp-wrap .bil{font-size:10px;color:var(--t2);padding:0 8px;white-space:nowrap;flex-shrink:0;}
+.bnc-inp-wrap input{
+  flex:1;background:transparent;border:none;
+  color:var(--t0);font-family:var(--mono);font-size:12px;
+  padding:8px 0;outline:none;min-width:0;
+}
+.bnc-inp-wrap input::placeholder{color:var(--t3);}
+.bnc-inp-wrap .biu{font-size:10px;color:var(--t2);padding:0 8px;flex-shrink:0;}
+.bnc-inp-wrap select{background:transparent;border:none;color:var(--t2);font-family:var(--mono);font-size:10px;outline:none;padding:0 8px;cursor:pointer;}
+.bnc-inp-wrap select option{background:var(--ink2);}
+
+/* Line-set row (compact: input + 3 buttons) */
+.line-set-row{display:flex;gap:4px;align-items:center;margin-bottom:5px;}
+.ls-inp{
+  flex:1;background:var(--ink);border:1px solid var(--ink4);
+  color:var(--t0);font-family:var(--mono);font-size:11px;
+  padding:7px 8px;border-radius:4px;outline:none;transition:.15s;min-width:0;
+}
+.ls-inp:focus{border-color:var(--sky);}
+.ls-inp::placeholder{color:var(--t3);}
+.ls-btn{
+  padding:6px 8px;border-radius:4px;font-size:10px;font-weight:700;
+  letter-spacing:.05em;cursor:pointer;transition:.15s;border:1px solid;white-space:nowrap;flex-shrink:0;
+}
+.ls-btn.buy{border-color:rgba(200,255,0,.4);color:var(--acid);}
+.ls-btn.buy:hover{background:var(--acid);color:var(--ink);}
+.ls-btn.pass{border-color:rgba(255,196,0,.4);color:var(--gold);}
+.ls-btn.pass:hover{background:var(--gold);color:var(--ink);}
+.ls-btn.s1{border-color:rgba(0,207,255,.4);color:var(--sky);}
+.ls-btn.s1:hover{background:var(--sky);color:var(--ink);}
+.ls-btn.s2{border-color:rgba(176,110,255,.4);color:var(--lilac);}
+.ls-btn.s2:hover{background:var(--lilac);color:var(--ink);}
+.ls-btn.ghost{border-color:var(--ink4);color:var(--t2);}
+.ls-btn.ghost:hover{border-color:var(--t2);}
+.ls-btn.cur{border-color:var(--ink4);color:var(--t2);font-size:9px;}
+.ls-btn.cur:hover{border-color:var(--sky);color:var(--sky);}
+
+/* Sub-row (trail settings etc.) */
+.sub-row{
+  display:flex;gap:5px;align-items:center;
+  margin-bottom:5px;
+}
+.sub-row .sl{font-size:10px;color:var(--t2);white-space:nowrap;}
+.sub-inp{
+  width:52px;background:var(--ink);border:1px solid var(--ink4);
+  color:var(--t0);font-family:var(--mono);font-size:11px;
+  padding:5px 6px;border-radius:4px;outline:none;transition:.15s;
+}
+.sub-inp:focus{border-color:var(--sky);}
+.sub-sel{
+  background:var(--ink);border:1px solid var(--ink4);
+  color:var(--t1);font-family:var(--mono);font-size:11px;
+  padding:5px 4px;border-radius:4px;outline:none;cursor:pointer;
+}
+.sub-sel option{background:var(--ink2);}
+.trail-lbl{font-family:var(--mono);font-size:9px;color:var(--sky);padding:2px 0;}
+
+/* Line section header with accent stripe */
+.line-head{
+  display:flex;align-items:center;gap:7px;
+  margin-bottom:8px;
+}
+.line-stripe{width:3px;height:14px;border-radius:2px;flex-shrink:0;}
+.line-stripe.buy{background:var(--acid);}
+.line-stripe.pass{background:var(--gold);}
+.line-stripe.s1{background:var(--sky);}
+.line-stripe.s2{background:var(--lilac);}
+.line-head-name{font-size:11px;font-weight:600;flex:1;}
+.line-head-name.buy{color:var(--acid);}
+.line-head-name.pass{color:var(--gold);}
+.line-head-name.s1{color:var(--sky);}
+.line-head-name.s2{color:var(--lilac);}
+.line-badge{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:10px;border:1px solid var(--ink4);color:var(--t3);}
+.line-badge.on.buy{border-color:var(--acid);color:var(--acid);}
+.line-badge.on.pass{border-color:var(--gold);color:var(--gold);}
+.line-badge.on.s1{border-color:var(--sky);color:var(--sky);}
+.line-badge.on.s2{border-color:var(--lilac);color:var(--lilac);}
+
+/* Hint text */
+.hint{font-size:9px;color:var(--t2);font-family:var(--mono);line-height:1.6;margin-top:4px;margin-bottom:4px;}
+.hint b{color:var(--gold);}
+
+/* Checkbox */
+.cbr{display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 0;}
+.cbbox{width:13px;height:13px;border-radius:3px;border:1px solid var(--ink4);background:var(--ink2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;}
+.cbbox.on{background:var(--lilac);border-color:var(--lilac);}
+.cbbox.on::after{content:'✓';font-size:9px;color:#fff;}
+.cblabel{font-size:10px;color:var(--t1);}
+
+/* Manual buy/sell (like Binance's big buy/sell buttons) */
+.man-btns{display:flex;gap:6px;padding:10px 12px;border-top:var(--bdr);}
+.man-btn{
+  flex:1;padding:10px;border-radius:4px;
+  font-family:var(--sans);font-size:12px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:.2s;border:none;
+}
+.man-btn.b{background:rgba(200,255,0,.15);color:var(--acid);border:1px solid rgba(200,255,0,.3);}
+.man-btn.b:hover{background:rgba(200,255,0,.28);}
+.man-btn.s{background:rgba(255,69,32,.15);color:var(--fire);border:1px solid rgba(255,69,32,.3);}
+.man-btn.s:hover{background:rgba(255,69,32,.28);}
+
+/* Avail row (like Binance's "Avbl X USDT" row) */
+.avbl-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:6px 0;font-size:10px;
+}
+.avbl-l{color:var(--t2);}
+.avbl-v{font-family:var(--mono);color:var(--t0);}
 
 /* ── MODAL ── */
 #mbg{position:fixed;inset:0;background:rgba(0,4,8,.85);display:none;align-items:center;justify-content:center;z-index:5000;backdrop-filter:blur(6px);}
 #mbg.open{display:flex;}
-#modal{background:var(--ink2);border:1px solid var(--ink4);border-radius:var(--r3);padding:26px;width:400px;box-shadow:0 40px 80px rgba(0,0,0,.6);}
-.mtitle{font-size:13px;font-weight:700;color:var(--t0);margin-bottom:18px;}
-.mf{margin-bottom:11px;}
+#modal{background:var(--ink2);border:1px solid var(--ink4);border-radius:10px;padding:24px;width:390px;box-shadow:0 40px 80px rgba(0,0,0,.6);}
+.mtitle{font-size:13px;font-weight:700;color:var(--t0);margin-bottom:16px;}
+.mf{margin-bottom:10px;}
 .mf label{display:block;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t2);margin-bottom:5px;}
-.minp{width:100%;background:var(--ink);border:1px solid var(--ink4);color:var(--t0);font-family:var(--mono);font-size:12px;padding:9px 12px;border-radius:var(--r);outline:none;}
+.minp{width:100%;background:var(--ink);border:1px solid var(--ink4);color:var(--t0);font-family:var(--mono);font-size:12px;padding:8px 10px;border-radius:4px;outline:none;}
 .minp:focus{border-color:var(--sky);}
-.mwarn{padding:9px 11px;background:rgba(255,196,0,.06);border:1px solid rgba(255,196,0,.2);border-radius:var(--r);font-size:10px;font-family:var(--mono);color:var(--gold);line-height:1.7;margin-top:12px;}
-.mfoot{display:flex;gap:7px;margin-top:16px;}
-.mbtn{flex:1;padding:9px;border-radius:var(--r);font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border:none;transition:.2s;}
+.mwarn{padding:8px 10px;background:rgba(255,196,0,.06);border:1px solid rgba(255,196,0,.2);border-radius:4px;font-size:10px;font-family:var(--mono);color:var(--gold);line-height:1.7;margin-top:10px;}
+.mfoot{display:flex;gap:6px;margin-top:14px;}
+.mbtn{flex:1;padding:9px;border-radius:4px;font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border:none;transition:.2s;}
 .mbtn.ok{background:var(--sky);color:var(--ink);}
 .mbtn.ok:hover{background:#00b8e0;}
 .mbtn.cn{background:var(--ink3);color:var(--t2);}
 .mbtn.cn:hover{background:var(--ink4);}
 
-/* credit */
-#cred{position:fixed;bottom:0;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9px;color:var(--t3);letter-spacing:.07em;pointer-events:none;z-index:10000;padding:3px 10px;}
+/* Credit */
+#cred{position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9px;color:var(--t3);letter-spacing:.07em;pointer-events:none;z-index:10000;}
 #cred b{color:var(--acid);}
 </style>
 </head>
 <body>
 
-<!-- GATE -->
+<!-- ════════ GATE ════════ -->
 <div id="gate">
   <div class="gg"></div><div class="gs"></div>
   <div class="gpanel">
@@ -311,177 +494,305 @@ input,select,button{font-family:inherit;}
       <p>Real API · Real Charts · No Simulation</p>
     </div>
     <div class="gtabs">
-      <div class="gtab active demo" id="gm-demo" onclick="gateMode('demo')">● Demo / Testnet</div>
+      <div class="gtab active demo" id="gm-demo" onclick="gateMode('demo')">● Demo / Paper</div>
       <div class="gtab live" id="gm-live" onclick="gateMode('live')">● Live Account</div>
     </div>
     <div id="gerr"></div>
     <div id="gate-key-fields">
-    <div class="gfl"><label>API Key</label><div class="giw"><input class="gi" id="g-key" type="password" placeholder="Paste Binance API key…" autocomplete="off" onkeydown="if(event.key==='Enter')gConn()"><button class="geye" onclick="gVis('g-key',this)">👁</button></div></div>
-    <div class="gfl"><label>API Secret</label><div class="giw"><input class="gi" id="g-sec" type="password" placeholder="Paste Binance API secret…" autocomplete="off" onkeydown="if(event.key==='Enter')gConn()"><button class="geye" onclick="gVis('g-sec',this)">👁</button></div></div>
-    </div><!-- /gate-key-fields -->
+      <div class="gfl"><label>API Key</label><div class="giw"><input class="gi" id="g-key" type="password" placeholder="Paste Binance API key…" autocomplete="off" onkeydown="if(event.key==='Enter')gConn()"><button class="geye" onclick="gVis('g-key',this)">👁</button></div></div>
+      <div class="gfl"><label>API Secret</label><div class="giw"><input class="gi" id="g-sec" type="password" placeholder="Paste Binance API secret…" autocomplete="off" onkeydown="if(event.key==='Enter')gConn()"><button class="geye" onclick="gVis('g-sec',this)">👁</button></div></div>
+    </div>
     <div id="gspin"><div class="sring"></div></div>
     <div id="gstatus"></div>
-    <button class="gcta" id="gbtn" onclick="gConn()">Connect to Binance</button>
-    <div class="ghint" id="ghint">Keys are stored <b>locally in your browser only</b> — never transmitted.<br>Enable <b>Spot Trading</b> permission only. Disable withdrawals.<br>Demo mode needs <b>Binance Testnet</b> keys (testnet.binance.vision).</div>
+    <button class="gcta" id="gbtn" onclick="gConn()">Start Demo Trading</button>
+    <div class="ghint" id="ghint"><b>Demo mode</b> uses real Binance price data with a simulated $10,000 USDT paper balance. No API keys needed.</div>
     <div class="gcredit">Developed by <b>MD GOLAM SAROWER ZIHAD</b></div>
   </div>
 </div>
 
-<!-- APP -->
+<!-- ════════ APP ════════ -->
 <div id="app">
-  <div id="tb">
-    <div class="tbl">ZB<b>·</b>Terminal</div>
-    <div class="tsep"></div>
-    <div class="tcc"><span>SYM</span><select id="sym" onchange="chSym()"><option>BTCUSDT</option><option>ETHUSDT</option><option>BNBUSDT</option><option>SOLUSDT</option><option>XRPUSDT</option><option>ADAUSDT</option><option>DOTUSDT</option><option>LINKUSDT</option><option>AVAXUSDT</option><option>MATICUSDT</option><option>DOGEUSDT</option><option>LTCUSDT</option></select></div>
-    <div class="tcc"><span>TF</span><select id="tf" onchange="chTF()"><option value="1m">1m</option><option value="3m">3m</option><option value="5m" selected>5m</option><option value="15m">15m</option><option value="30m">30m</option><option value="1h">1h</option><option value="4h">4h</option><option value="1d">1d</option></select></div>
-    <div class="tsep"></div>
-    <div id="tbprice">——</div>
-    <div id="tbpct"></div>
-    <div class="tsp"></div>
-    <div class="tmode"><button class="active demo" id="hmd" onclick="setMode('demo')">Demo</button><button class="live" id="hml" onclick="setMode('live')">Live</button></div>
-    <div class="tsep"></div>
-    <div class="tconn"><div class="dot" id="cdot"></div><span class="tconntxt" id="ctxt">Offline</span></div>
-    <div class="tsep"></div>
-    <button class="tbtn" onclick="openMod()">⚙ API</button>
-    <button class="tbtn danger" onclick="disc()">⏏ Exit</button>
-  </div>
 
-  <div id="ws">
-    <!-- LEFT -->
-    <div id="left">
-      <div class="rs">
-        <div class="rl">API Status</div>
-        <div class="abar"><div class="dot" id="adot"></div><span class="abartxt" id="abartxt">Not connected</span></div>
-        <div class="akrow"><span class="akl">KEY</span><span class="akv ns" id="kpkey">—</span><button onclick="tKV('key')">👁</button></div>
-        <div class="akrow"><span class="akl">SEC</span><span class="akv ns" id="kpsec">—</span><button onclick="tKV('sec')">👁</button></div>
-        <button id="etog" onclick="tEditForm()">✎ Change API Keys</button>
-        <div id="eform">
-          <div class="ef"><label>API Key</label><div class="eiw"><input class="ei" id="eikey" type="password" placeholder="Key…"><button class="eieye" onclick="tIV('eikey',this)">👁</button></div></div>
-          <div class="ef"><label>Secret</label><div class="eiw"><input class="ei" id="eisec" type="password" placeholder="Secret…"><button class="eieye" onclick="tIV('eisec',this)">👁</button></div></div>
-          <div class="eacts">
-            <button class="eab save" onclick="saveInline()">Save</button>
-            <button class="eab test" onclick="testApi()">Test</button>
-            <button class="eab clr" onclick="clrKeys()">Clear</button>
-            <button class="eab can" onclick="tEditForm()">✕</button>
-          </div>
-        </div>
+  <!-- TOPBAR -->
+  <div id="topbar">
+    <div class="tb-brand-zone">
+      <div class="tb-logo">ZB<b>·</b>Broker</div>
+      <div class="tb-mode-badge demo" id="mode-badge">DEMO</div>
+    </div>
+
+    <div class="tb-center">
+      <div class="tb-sym-picker">
+        <select id="sym" onchange="chSym()">
+          <option>BTCUSDT</option><option>ETHUSDT</option><option>BNBUSDT</option>
+          <option>SOLUSDT</option><option>XRPUSDT</option><option>ADAUSDT</option>
+          <option>DOTUSDT</option><option>LINKUSDT</option><option>AVAXUSDT</option>
+          <option>MATICUSDT</option><option>DOGEUSDT</option><option>LTCUSDT</option>
+        </select>
       </div>
-      <div class="rs">
-        <div class="rl">Balance</div>
-        <div class="sr"><span class="srl">USDT</span><span class="srr" id="busdt">—</span></div>
-        <div class="sr"><span class="srl" id="bclbl">BTC</span><span class="srr" id="bcrypto">—</span></div>
-        <div class="sr"><span class="srl">In Position</span><span class="srr" id="bpos">NO</span></div>
+      <div class="tb-tf-picker">
+        <span>TF</span>
+        <select id="tf" onchange="chTF()">
+          <option value="1m">1m</option><option value="3m">3m</option>
+          <option value="5m" selected>5m</option><option value="15m">15m</option>
+          <option value="30m">30m</option><option value="1h">1h</option>
+          <option value="4h">4h</option><option value="1d">1d</option>
+        </select>
       </div>
-      <div class="rs">
-        <div class="rl">Open Position</div>
-        <div class="sr"><span class="srl">Entry</span><span class="srr" id="pentry">—</span></div>
-        <div class="sr"><span class="srl">Qty</span><span class="srr" id="pqty">—</span></div>
-        <div class="sr"><span class="srl">Value</span><span class="srr" id="pval">—</span></div>
-        <div class="sr"><span class="srl">PnL $</span><span class="srr" id="ppnl">—</span></div>
-        <div class="sr"><span class="srl">PnL %</span><span class="srr" id="ppct">—</span></div>
+      <div class="tb-price-block">
+        <div id="tbprice">——</div>
+        <div id="tbpct"></div>
       </div>
-      <div class="rs">
-        <div class="rl">Bot Engine</div>
-        <div class="bblk">
-          <div class="borb" id="borb"><div class="borbi"></div></div>
-          <div class="bstate" id="bstate">Idle</div>
-          <div class="bphase" id="bphase">—</div>
-          <button id="ss" class="go" onclick="togBot()">▶ Start Bot</button>
-        </div>
-      </div>
-      <div class="rs">
-        <div class="rl">Price Lines</div>
-        <div class="lsg">
-          <div class="lsgr"><div class="ldot buy" id="ldbuy"></div><span class="lsn">Buy</span><span class="lsv ns" id="lvbuy">Not set</span></div>
-          <div class="lsgr"><div class="ldot pass" id="ldpass"></div><span class="lsn">Pass</span><span class="lsv ns" id="lvpass">Not set</span></div>
-          <div class="lsgr"><div class="ldot s1" id="lds1"></div><span class="lsn">1st Sell</span><span class="lsv ns" id="lvs1">Not set</span></div>
-          <div class="lsgr"><div class="ldot s2" id="lds2"></div><span class="lsn">2nd Sell</span><span class="lsv ns" id="lvs2">Not set</span></div>
-          <div class="sr" style="margin-top:4px;"><span class="srl">Pass Zone</span><span class="srr" id="lvzone">Inactive</span></div>
-        </div>
-      </div>
-      <div class="rs">
-        <div class="rl">Session</div>
-        <div class="sr"><span class="srl">Trades</span><span class="srr" id="ssn">0</span></div>
-        <div class="sr"><span class="srl">PnL</span><span class="srr" id="sspnl">$0.00</span></div>
-        <div class="sr"><span class="srl">Win Rate</span><span class="srr" id="sswr">—</span></div>
+      <div class="tb-stats">
+        <div class="tb-stat"><span class="tb-stat-l">USDT Avbl</span><span class="tb-stat-v" id="hdr-usdt">—</span></div>
+        <div class="tb-stat"><span class="tb-stat-l">In Position</span><span class="tb-stat-v" id="hdr-pos">NO</span></div>
+        <div class="tb-stat"><span class="tb-stat-l">Session PnL</span><span class="tb-stat-v" id="hdr-pnl">$0.00</span></div>
+        <div class="tb-stat"><span class="tb-stat-l">Trades</span><span class="tb-stat-v" id="hdr-trades">0</span></div>
       </div>
     </div>
 
-    <!-- CHART -->
+    <div class="tb-right-zone">
+      <div class="tb-mode-toggle">
+        <button class="active demo" id="hmd" onclick="setMode('demo')">Demo</button>
+        <button class="live" id="hml" onclick="setMode('live')">Live</button>
+      </div>
+      <div class="tb-conn">
+        <div class="dot" id="cdot"></div>
+        <span class="tconntxt" id="ctxt">Offline</span>
+      </div>
+      <button class="tb-action-btn" onclick="openMod()">⚙ API</button>
+      <button class="tb-action-btn exit" onclick="disc()">⏏ Exit</button>
+    </div>
+  </div>
+
+  <!-- WORKSPACE -->
+  <div id="workspace">
+
+    <!-- ── LEFT (info panel) ── -->
+    <div id="left">
+
+      <!-- API status bar -->
+      <div class="api-status-bar">
+        <div class="dot" id="adot"></div>
+        <span class="api-bar-txt" id="abartxt">Paper trading mode</span>
+        <button class="api-mini-btn" onclick="tEditForm()">✎ Keys</button>
+      </div>
+
+      <!-- API key preview -->
+      <div style="padding:5px 12px;border-bottom:var(--bdr);display:flex;flex-direction:column;gap:3px;">
+        <div style="display:flex;align-items:center;gap:5px;">
+          <span style="font-size:9px;font-weight:700;color:var(--t2);width:24px;">KEY</span>
+          <span style="flex:1;font-family:var(--mono);font-size:10px;color:var(--sky);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="kpkey">—</span>
+          <button style="background:none;border:none;cursor:pointer;color:var(--t2);font-size:11px;" onclick="tKV('key')">👁</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;">
+          <span style="font-size:9px;font-weight:700;color:var(--t2);width:24px;">SEC</span>
+          <span style="flex:1;font-family:var(--mono);font-size:10px;color:var(--sky);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="kpsec">—</span>
+          <button style="background:none;border:none;cursor:pointer;color:var(--t2);font-size:11px;" onclick="tKV('sec')">👁</button>
+        </div>
+      </div>
+
+      <!-- Inline API edit -->
+      <div class="api-edit-panel" id="eform">
+        <div class="aep-field"><label>API Key</label><div class="aep-iw"><input class="aep-i" id="eikey" type="password" placeholder="Paste key…"><button class="aep-eye" onclick="tIV('eikey',this)">👁</button></div></div>
+        <div class="aep-field"><label>Secret</label><div class="aep-iw"><input class="aep-i" id="eisec" type="password" placeholder="Paste secret…"><button class="aep-eye" onclick="tIV('eisec',this)">👁</button></div></div>
+        <div class="aep-row">
+          <button class="aep-btn sv" onclick="saveInline()">Save</button>
+          <button class="aep-btn ts" onclick="testApi()">Test</button>
+          <button class="aep-btn cl" onclick="clrKeys()">Clear</button>
+          <button class="aep-btn cn" onclick="tEditForm()">✕</button>
+        </div>
+      </div>
+
+      <!-- Balance (Binance-style) -->
+      <div class="sec-head"><span class="sec-head-label">Balance</span></div>
+      <div class="sec-body">
+        <div class="dr"><span class="dr-l">USDT</span><span class="dr-v" id="busdt">—</span></div>
+        <div class="dr"><span class="dr-l" id="bclbl">BTC</span><span class="dr-v" id="bcrypto">—</span></div>
+        <div class="dr"><span class="dr-l">In Position</span><span class="dr-v" id="bpos">NO</span></div>
+      </div>
+
+      <!-- Open position -->
+      <div class="sec-head"><span class="sec-head-label">Open Position</span></div>
+      <div class="sec-body">
+        <div class="dr"><span class="dr-l">Entry</span><span class="dr-v" id="pentry">—</span></div>
+        <div class="dr"><span class="dr-l">Qty</span><span class="dr-v" id="pqty">—</span></div>
+        <div class="dr"><span class="dr-l">Mkt Value</span><span class="dr-v" id="pval">—</span></div>
+        <div class="dr"><span class="dr-l">Unreal. PnL</span><span class="dr-v" id="ppnl">—</span></div>
+        <div class="dr"><span class="dr-l">PnL %</span><span class="dr-v" id="ppct">—</span></div>
+      </div>
+
+      <!-- Bot engine -->
+      <div class="sec-head"><span class="sec-head-label">Bot Engine</span></div>
+      <div class="bot-orb-wrap">
+        <div class="borb" id="borb"><div class="borbi"></div></div>
+        <div class="bot-text">
+          <div class="bstate" id="bstate">Idle</div>
+          <div class="bphase" id="bphase">—</div>
+        </div>
+        <button id="ss" class="go" onclick="togBot()">▶ Start</button>
+      </div>
+
+      <!-- Line status -->
+      <div class="sec-head"><span class="sec-head-label">Price Lines</span><span class="dr-v dim" id="lvzone">—</span></div>
+      <div class="lsg-row"><div class="ldot buy" id="ldbuy"></div><span class="lsg-name">Buy</span><span class="lsv ns" id="lvbuy">Not set</span></div>
+      <div class="lsg-row"><div class="ldot pass" id="ldpass"></div><span class="lsg-name">Pass</span><span class="lsv ns" id="lvpass">Not set</span></div>
+      <div class="lsg-row"><div class="ldot s1" id="lds1"></div><span class="lsg-name">1st Sell</span><span class="lsv ns" id="lvs1">Not set</span></div>
+      <div class="lsg-row"><div class="ldot s2" id="lds2"></div><span class="lsg-name">2nd Sell</span><span class="lsv ns" id="lvs2">Not set</span></div>
+
+      <!-- Session -->
+      <div class="sec-head"><span class="sec-head-label">Session Stats</span></div>
+      <div class="sec-body">
+        <div class="dr"><span class="dr-l">Trades</span><span class="dr-v" id="ssn">0</span></div>
+        <div class="dr"><span class="dr-l">Total PnL</span><span class="dr-v" id="sspnl">$0.00</span></div>
+        <div class="dr"><span class="dr-l">Win Rate</span><span class="dr-v" id="sswr">—</span></div>
+      </div>
+
+    </div><!-- /left -->
+
+    <!-- ── CHART (center — dominant) ── -->
     <div id="ca"><div id="chart"></div></div>
 
-    <!-- RIGHT -->
+    <!-- ── RIGHT (Binance-style trading panel) ── -->
     <div id="right">
-      <div class="rhead"><div class="rhtitle">4-Line Trading Bot</div></div>
-      <div class="rbody">
+      <div class="rp-tabs">
+        <div class="rp-tab active">4-Line Bot</div>
+        <div class="rp-tab" style="margin-left:auto;font-size:10px;color:var(--t3);cursor:default;">Spot</div>
+      </div>
 
-        <div class="tsc">
-          <div class="rl">Trade Amount</div>
-          <div class="ir"><input class="fi" id="tamt" type="number" value="100" min="0" placeholder="Amount"><select class="fis" id="tunit"><option value="usdt">USDT</option><option value="coin">Coin</option></select></div>
-          <div style="font-size:10px;font-family:var(--mono);color:var(--t2);text-align:right;" id="test">≈ —</div>
+      <div class="rp-body">
+
+        <!-- Amount -->
+        <div class="rp-section">
+          <div class="rp-label">Trade Amount</div>
+          <div class="bnc-inp-wrap">
+            <span class="bil">Amount</span>
+            <input type="number" id="tamt" value="100" min="0" placeholder="0.00">
+            <select id="tunit" class="biu" style="padding:0 8px;background:transparent;border:none;border-left:1px solid var(--ink4);color:var(--t2);cursor:pointer;outline:none;">
+              <option value="usdt">USDT</option>
+              <option value="coin">Coin</option>
+            </select>
+          </div>
+          <div style="text-align:right;font-family:var(--mono);font-size:10px;color:var(--t2);" id="test">≈ —</div>
+          <!-- Available -->
+          <div class="avbl-row" style="margin-top:4px;">
+            <span class="avbl-l">Avbl USDT</span><span class="avbl-v" id="avbl-usdt">—</span>
+          </div>
+          <div class="avbl-row">
+            <span class="avbl-l">Avbl <span id="avbl-clbl">BTC</span></span><span class="avbl-v" id="avbl-coin">—</span>
+          </div>
         </div>
 
         <!-- BUY LINE -->
-        <div class="lc">
-          <div class="lch"><div class="lcs buy"></div><div class="lcn buy">Buy Price Line</div><div class="lcb" id="bbadge">Off</div></div>
-          <div class="lcbody">
-            <div class="ir"><input class="fi" id="buyp" type="number" placeholder="Buy price…" step="0.01"><button class="ab buy" onclick="setL('buy')">Set</button><button class="ab g" onclick="clrL('buy')">✕</button></div>
-            <button class="ab buy" style="width:100%;font-size:9px;" onclick="useC('buy')">Use Current Price</button>
+        <div class="rp-section">
+          <div class="line-head">
+            <div class="line-stripe buy"></div>
+            <div class="line-head-name buy">Buy Price Line</div>
+            <div class="line-badge" id="bbadge">Off</div>
+          </div>
+          <div class="line-set-row">
+            <input class="ls-inp" id="buyp" type="number" placeholder="Buy price…" step="0.01">
+            <button class="ls-btn buy" onclick="setL('buy')">Set</button>
+            <button class="ls-btn ghost" onclick="useC('buy')" title="Use current price">≈</button>
+            <button class="ls-btn ghost" onclick="clrL('buy')">✕</button>
           </div>
         </div>
 
         <!-- PASS LINE -->
-        <div class="lc">
-          <div class="lch"><div class="lcs pass"></div><div class="lcn pass">Pass Price Line</div><div class="lcb" id="pbadge">Off</div></div>
-          <div class="lcbody">
-            <div class="ir"><input class="fi" id="passp" type="number" placeholder="Pass price…" step="0.01"><button class="ab pass" onclick="setL('pass')">Set</button><button class="ab g" onclick="clrL('pass')">✕</button></div>
-            <button class="ab pass" style="width:100%;font-size:9px;" onclick="useC('pass')">Use Current Price</button>
-            <div class="hint">↑ Lets candle pass through 1st sell upward<br><b>↓ Instant sell if price reverses below this</b></div>
+        <div class="rp-section">
+          <div class="line-head">
+            <div class="line-stripe pass"></div>
+            <div class="line-head-name pass">Pass Price Line</div>
+            <div class="line-badge" id="pbadge">Off</div>
           </div>
+          <div class="line-set-row">
+            <input class="ls-inp" id="passp" type="number" placeholder="Pass price…" step="0.01">
+            <button class="ls-btn pass" onclick="setL('pass')">Set</button>
+            <button class="ls-btn ghost" onclick="useC('pass')" title="Use current price">≈</button>
+            <button class="ls-btn ghost" onclick="clrL('pass')">✕</button>
+          </div>
+          <div class="hint">↑ Allows price to pass 1st sell upward<br><b>↓ Instant sell on reversal through this</b></div>
         </div>
 
-        <!-- 1ST SELL -->
-        <div class="lc">
-          <div class="lch"><div class="lcs s1"></div><div class="lcn s1">1st Sell Line</div><div class="lcb" id="s1badge">Off</div></div>
-          <div class="lcbody">
-            <div class="ir"><input class="fi" id="s1p" type="number" placeholder="1st sell price…" step="0.01"><button class="ab s1" onclick="setL('sell1')">Set</button><button class="ab g" onclick="clrL('sell1')">✕</button></div>
-            <div class="ir"><span class="islab">Trail every</span><input class="fi" id="s1intv" type="number" value="5" min="1" style="max-width:52px;"><select class="fis" id="s1unit"><option value="60">min</option><option value="3600">hr</option><option value="1">sec</option></select></div>
-            <div class="ir"><span class="islab">Move up $</span><input class="fi" id="s1mv" type="number" value="5" min="0.01"></div>
-            <div class="trails" id="s1trail">Trail: inactive</div>
-            <button class="ab s1" style="width:100%;font-size:9px;margin-top:5px;" onclick="useC('sell1')">Use Current Price</button>
+        <!-- 1ST SELL LINE -->
+        <div class="rp-section">
+          <div class="line-head">
+            <div class="line-stripe s1"></div>
+            <div class="line-head-name s1">1st Sell Line</div>
+            <div class="line-badge" id="s1badge">Off</div>
           </div>
+          <div class="line-set-row">
+            <input class="ls-inp" id="s1p" type="number" placeholder="1st sell price…" step="0.01">
+            <button class="ls-btn s1" onclick="setL('sell1')">Set</button>
+            <button class="ls-btn ghost" onclick="useC('sell1')" title="Use current price">≈</button>
+            <button class="ls-btn ghost" onclick="clrL('sell1')">✕</button>
+          </div>
+          <div class="sub-row">
+            <span class="sl">Trail every</span>
+            <input class="sub-inp" id="s1intv" type="number" value="5" min="1">
+            <select class="sub-sel" id="s1unit">
+              <option value="60">min</option>
+              <option value="3600">hr</option>
+              <option value="1">sec</option>
+            </select>
+            <span class="sl">up $</span>
+            <input class="sub-inp" id="s1mv" type="number" value="5" min="0.01">
+          </div>
+          <div class="trail-lbl" id="s1trail">Trail: inactive</div>
         </div>
 
-        <!-- 2ND SELL -->
-        <div class="lc">
-          <div class="lch"><div class="lcs s2"></div><div class="lcn s2">2nd Sell Line</div><div class="lcb" id="s2badge">Off</div></div>
-          <div class="lcbody">
-            <div class="ir"><input class="fi" id="s2p" type="number" placeholder="2nd sell price…" step="0.01"><button class="ab s2" onclick="setL('sell2')">Set</button><button class="ab g" onclick="clrL('sell2')">✕</button></div>
-            <div class="cbr" onclick="togS2()"><div class="cbbox" id="s2cb"></div><span class="cblabel">Auto move up on new candle</span></div>
-            <div id="s2auto" style="display:none;">
-              <div class="ir"><span class="islab">Move up $</span><input class="fi" id="s2mv" type="number" value="5" min="0.01"></div>
-              <div class="ir"><span class="islab">Candle TF</span><select class="fis" id="s2tf" style="max-width:100%;"><option value="1m">1m</option><option value="3m">3m</option><option value="5m" selected>5m</option><option value="15m">15m</option><option value="30m">30m</option><option value="1h">1h</option></select></div>
+        <!-- 2ND SELL LINE -->
+        <div class="rp-section">
+          <div class="line-head">
+            <div class="line-stripe s2"></div>
+            <div class="line-head-name s2">2nd Sell Line</div>
+            <div class="line-badge" id="s2badge">Off</div>
+          </div>
+          <div class="line-set-row">
+            <input class="ls-inp" id="s2p" type="number" placeholder="2nd sell price…" step="0.01">
+            <button class="ls-btn s2" onclick="setL('sell2')">Set</button>
+            <button class="ls-btn ghost" onclick="useC('sell2')" title="Use current price">≈</button>
+            <button class="ls-btn ghost" onclick="clrL('sell2')">✕</button>
+          </div>
+          <div class="cbr" onclick="togS2()">
+            <div class="cbbox" id="s2cb"></div>
+            <span class="cblabel">Auto ↑ on new candle</span>
+          </div>
+          <div id="s2auto" style="display:none;">
+            <div class="sub-row">
+              <span class="sl">Move up $</span>
+              <input class="sub-inp" id="s2mv" type="number" value="5" min="0.01" style="width:64px;">
+              <span class="sl">TF</span>
+              <select class="sub-sel" id="s2tf">
+                <option value="1m">1m</option><option value="3m">3m</option>
+                <option value="5m" selected>5m</option><option value="15m">15m</option>
+                <option value="30m">30m</option><option value="1h">1h</option>
+              </select>
             </div>
-            <button class="ab s2" style="width:100%;font-size:9px;" onclick="useC('sell2')">Use Current Price</button>
           </div>
         </div>
 
-        <!-- MANUAL -->
-        <div class="tsc">
-          <div class="rl" style="margin-bottom:8px;">Manual Override</div>
-          <div class="manrow"><button class="manb b" onclick="manBuy()">⬆ Buy Now</button><button class="manb s" onclick="manSell()">⬇ Sell Now</button></div>
-        </div>
+      </div><!-- /rp-body -->
 
+      <!-- Manual override (bottom like Binance's Buy/Sell buttons) -->
+      <div class="man-btns">
+        <button class="man-btn b" onclick="manBuy()">⬆ Buy Now</button>
+        <button class="man-btn s" onclick="manSell()">⬇ Sell Now</button>
       </div>
-    </div>
 
-    <!-- LOG -->
-    <div id="log">
-      <div class="logbar"><span class="logtitle">Trade Log</span><button class="logclr" onclick="clrLog()">Clear</button></div>
+    </div><!-- /right -->
+
+    <!-- ── LOG (bottom under chart) ── -->
+    <div id="logpanel">
+      <div class="log-header">
+        <span class="log-tab active">Trade Log</span>
+        <span class="log-tab" id="log-mode-lbl" style="color:var(--t2);font-size:9px;font-family:var(--mono);">DEMO</span>
+        <button class="log-clr" onclick="clrLog()">Clear</button>
+      </div>
       <div id="logent"></div>
     </div>
-  </div>
-</div>
+
+  </div><!-- /workspace -->
+</div><!-- /app -->
 
 <!-- MODAL -->
 <div id="mbg" onclick="if(event.target===this)closeMod()">
@@ -489,8 +800,11 @@ input,select,button{font-family:inherit;}
     <div class="mtitle">⚙ API Configuration</div>
     <div class="mf"><label>API Key</label><input class="minp" id="mkey" type="text" placeholder="Binance API key…"></div>
     <div class="mf"><label>API Secret</label><input class="minp" id="msec" type="password" placeholder="Binance API secret…"></div>
-    <div class="mwarn">Keys stored locally — never transmitted. Use Spot-only keys. Disable withdrawals.</div>
-    <div class="mfoot"><button class="mbtn cn" onclick="closeMod()">Cancel</button><button class="mbtn ok" onclick="saveMod()">Save</button></div>
+    <div class="mwarn">Keys are stored locally — never transmitted. Use Spot-only keys. Disable withdrawals.</div>
+    <div class="mfoot">
+      <button class="mbtn cn" onclick="closeMod()">Cancel</button>
+      <button class="mbtn ok" onclick="saveMod()">Save & Connect</button>
+    </div>
   </div>
 </div>
 
@@ -505,7 +819,7 @@ const S={
   botOn:false,inPos:false,entry:0,qty:0,passZone:false,
   s1Timer:null,s2Up:false,s2Ws:null,priceWs:null,klineWs:null,
   trades:0,pnl:0,wins:0,
-  demoUSDT:10000,demoCoin:0   // paper balance for demo mode
+  demoUSDT:10000,demoCoin:0
 };
 const BASE={live:'https://api.binance.com',demo:'https://api.binance.com'};
 const WSB={live:'wss://stream.binance.com:9443/ws/',demo:'wss://stream.binance.com:9443/ws/'};
@@ -516,48 +830,25 @@ function gateMode(m){
   S.mode=m;
   document.getElementById('gm-demo').className='gtab demo'+(m==='demo'?' active':'');
   document.getElementById('gm-live').className='gtab live'+(m==='live'?' active':'');
-  // Demo needs no keys — hide key fields and change button
-  const keyFields = document.getElementById('gate-key-fields');
-  const gbtn = document.getElementById('gbtn');
-  const ghint = document.getElementById('ghint');
-  if(m==='demo'){
-    keyFields.style.display='none';
-    gbtn.textContent='Start Demo Trading';
-    ghint.innerHTML='<b>Demo mode</b> uses real Binance price data with a simulated $10,000 USDT paper balance. No API keys needed.';
-  } else {
-    keyFields.style.display='block';
-    gbtn.textContent='Connect to Binance';
-    ghint.innerHTML='Keys are stored <b>locally in your browser only</b> — never transmitted.<br>Enable <b>Spot Trading</b> permission only. Disable withdrawals.';
-  }
+  const kf=document.getElementById('gate-key-fields'),gbtn=document.getElementById('gbtn'),gh=document.getElementById('ghint');
+  if(m==='demo'){kf.style.display='none';gbtn.textContent='Start Demo Trading';gh.innerHTML='<b>Demo mode</b> uses real Binance price data with a simulated $10,000 USDT paper balance. No API keys needed.';}
+  else{kf.style.display='block';gbtn.textContent='Connect to Binance';gh.innerHTML='Keys are stored <b>locally in your browser only</b> — never transmitted.<br>Enable <b>Spot Trading</b> permission only. Disable withdrawals.';}
 }
 function gVis(id,btn){const e=document.getElementById(id);e.type=e.type==='password'?'text':'password';btn.style.color=e.type==='text'?'var(--sky)':'';}
 
 async function gConn(){
   const err=document.getElementById('gerr');err.style.display='none';
   const btn=document.getElementById('gbtn');
-
-  // ── DEMO MODE: no keys needed, launch straight into paper trading ──
   if(S.mode==='demo'){
-    S.apiKey='';S.apiSecret='';
-    S.demoUSDT=10000;S.demoCoin=0;
+    S.apiKey='';S.apiSecret='';S.demoUSDT=10000;S.demoCoin=0;
     localStorage.setItem('zb_mode','demo');
     btn.disabled=true;
     document.getElementById('gspin').style.display='block';
     document.getElementById('gstatus').textContent='Connecting to live price feed…';
-    // Quick check that Binance public API is reachable
-    try{
-      await fetch('https://api.binance.com/api/v3/ping');
-      launch();
-    }catch(e){
-      btn.disabled=false;
-      document.getElementById('gspin').style.display='none';
-      document.getElementById('gstatus').textContent='';
-      gErr('Cannot reach Binance servers. Check your internet connection.');
-    }
+    try{await fetch('https://api.binance.com/api/v3/ping');launch();}
+    catch(e){btn.disabled=false;document.getElementById('gspin').style.display='none';document.getElementById('gstatus').textContent='';gErr('Cannot reach Binance servers. Check your internet connection.');}
     return;
   }
-
-  // ── LIVE MODE: require and verify API keys ──
   const k=document.getElementById('g-key').value.trim(),s=document.getElementById('g-sec').value.trim();
   if(!k||!s){gErr('Both API Key and Secret are required for Live mode.');return;}
   S.apiKey=k;S.apiSecret=s;
@@ -566,29 +857,12 @@ async function gConn(){
   document.getElementById('gstatus').textContent='Verifying keys with Binance…';
   try{
     const d=await apiGet('/api/v3/account');
-    if(d.balances){
-      localStorage.setItem('zb_k',k);localStorage.setItem('zb_s',s);
-      localStorage.setItem('zb_mode','live');
-      launch();
-    }else{
-      S.apiKey='';S.apiSecret='';
-      btn.disabled=false;btn.textContent='Connect to Binance';
-      document.getElementById('gspin').style.display='none';
-      document.getElementById('gstatus').textContent='';
-      const code=d.code?'  [Binance code: '+d.code+']':'';
-      gErr((d.msg||'Invalid API key or permission denied.')+code);
-    }
+    if(d.balances){localStorage.setItem('zb_k',k);localStorage.setItem('zb_s',s);localStorage.setItem('zb_mode','live');launch();}
+    else{S.apiKey='';S.apiSecret='';btn.disabled=false;btn.textContent='Connect to Binance';document.getElementById('gspin').style.display='none';document.getElementById('gstatus').textContent='';gErr((d.msg||'Invalid API key or permission denied.')+(d.code?' [code:'+d.code+']':''));}
   }catch(e){
-    S.apiKey='';S.apiSecret='';
-    btn.disabled=false;btn.textContent='Connect to Binance';
-    document.getElementById('gspin').style.display='none';
-    document.getElementById('gstatus').textContent='';
-    const onHttps=location.protocol==='https:';
-    if(onHttps){
-      gErr('Connection failed. Possible causes:\n• Wrong API key or secret\n• API key has IP restriction — disable it on Binance\n• Binance is temporarily down\nError: '+e.message);
-    }else{
-      gErr('Open the site via HTTPS (GitHub Pages) not from a local file. Error: '+e.message);
-    }
+    S.apiKey='';S.apiSecret='';btn.disabled=false;btn.textContent='Connect to Binance';
+    document.getElementById('gspin').style.display='none';document.getElementById('gstatus').textContent='';
+    gErr(location.protocol==='https:'?'Connection failed:\n• Wrong key/secret\n• IP restriction on key — disable it on Binance\n• Binance temporarily down\nError: '+e.message:'Open via HTTPS (GitHub Pages). Error: '+e.message);
   }
 }
 function gErr(m){const e=document.getElementById('gerr');e.textContent=m;e.style.display='block';}
@@ -597,91 +871,53 @@ function launch(){
   document.getElementById('gate').style.display='none';
   document.getElementById('app').style.display='flex';
   syncMode();updateApiDisp();
-  wfc(()=>{initChart();loadK();connectWS();fetchBal();setInterval(fetchBal,30000);lg('INFO','Terminal connected',BASE[S.mode],'');});
+  wfc(()=>{initChart();loadK();connectWS();fetchBal();setInterval(fetchBal,30000);lg('INFO','Terminal connected',S.mode.toUpperCase(),'');});
 }
 
-// SIGN + API
-// Binance: timestamp must be LAST param, values NOT url-encoded, recvWindow generous
-async function hmacSHA256(secret, message) {
-  const key = await crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-  );
-  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
-  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2,'0')).join('');
+// HMAC + API
+async function hmacSHA256(secret,message){
+  const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);
+  const sig=await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(message));
+  return Array.from(new Uint8Array(sig)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
-
-async function sign(params) {
-  const qs = Object.entries(params).map(([k,v]) => k + '=' + v).join('&');
-  const sig = await hmacSHA256(S.apiSecret, qs);
-  return qs + '&signature=' + sig;
-}
-
-async function apiGet(path) {
-  const qs = await sign({ recvWindow: 10000, timestamp: Date.now() });
-  const r = await fetch(BASE[S.mode] + path + '?' + qs, {
-    headers: { 'X-MBX-APIKEY': S.apiKey }
-  });
-  if (!r.ok && r.status !== 400) {
-    throw new Error('HTTP ' + r.status + ' ' + r.statusText);
-  }
-  const data = await r.json();
-  return data;
-}
-
-async function placeOrder(side, qty) {
-  const qs = await sign({
-    symbol: S.sym, side: side, type: 'MARKET',
-    quantity: qty, recvWindow: 10000, timestamp: Date.now()
-  });
-  const r = await fetch(BASE[S.mode] + '/api/v3/order', {
-    method: 'POST',
-    headers: { 'X-MBX-APIKEY': S.apiKey, 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: qs
-  });
-  return r.json();
-}
+async function sign(params){const qs=Object.entries(params).map(([k,v])=>k+'='+v).join('&');return qs+'&signature='+await hmacSHA256(S.apiSecret,qs);}
+async function apiGet(path){const qs=await sign({recvWindow:10000,timestamp:Date.now()});const r=await fetch(BASE[S.mode]+path+'?'+qs,{headers:{'X-MBX-APIKEY':S.apiKey}});if(!r.ok&&r.status!==400)throw new Error('HTTP '+r.status);return r.json();}
+async function placeOrder(side,qty){const qs=await sign({symbol:S.sym,side,type:'MARKET',quantity:qty,recvWindow:10000,timestamp:Date.now()});const r=await fetch(BASE[S.mode]+'/api/v3/order',{method:'POST',headers:{'X-MBX-APIKEY':S.apiKey,'Content-Type':'application/x-www-form-urlencoded'},body:qs});return r.json();}
 
 async function fetchBal(){
   const cl=S.sym.replace('USDT','');
-  set('bclbl',cl);
+  set('bclbl',cl);set('avbl-clbl',cl);
   if(S.mode==='demo'){
-    // Paper balance — tracked in state
-    set('busdt',S.demoUSDT.toFixed(2));
-    set('bcrypto',S.demoCoin.toFixed(6));
-    return;
+    set('busdt',S.demoUSDT.toFixed(2));set('bcrypto',S.demoCoin.toFixed(6));
+    set('avbl-usdt',S.demoUSDT.toFixed(2));set('avbl-coin',S.demoCoin.toFixed(6));
+    set('hdr-usdt',S.demoUSDT.toFixed(2));return;
   }
   if(!S.apiKey)return;
   try{
-    const d=await apiGet('/api/v3/account');
-    if(!d.balances)return;
+    const d=await apiGet('/api/v3/account');if(!d.balances)return;
     const u=d.balances.find(b=>b.asset==='USDT'),c=d.balances.find(b=>b.asset===cl);
-    set('busdt',u?(+u.free).toFixed(2):'—');
-    set('bcrypto',c?(+c.free).toFixed(6):'—');
+    const uv=u?(+u.free).toFixed(2):'—',cv=c?(+c.free).toFixed(6):'—';
+    set('busdt',uv);set('bcrypto',cv);set('avbl-usdt',uv);set('avbl-coin',cv);set('hdr-usdt',uv);
   }catch(e){}
 }
 
 // CHART
 function wfc(cb,n=0){if(typeof LightweightCharts!=='undefined')cb();else if(n<120)setTimeout(()=>wfc(cb,n+1),100);else document.getElementById('chart').innerHTML='<p style="padding:20px;color:#ff4520;font-family:monospace;">Chart library failed — check internet.</p>';}
-
 function initChart(){
   const el=document.getElementById('chart'),area=document.getElementById('ca');
   chart=LightweightCharts.createChart(el,{width:area.clientWidth,height:area.clientHeight,
-    layout:{background:{color:'#000408'},textColor:'#2a3a4e',fontFamily:"'JetBrains Mono',monospace"},
-    grid:{vertLines:{color:'#080e1a'},horzLines:{color:'#080e1a'}},
-    crosshair:{vertLine:{color:'rgba(0,207,255,.25)',style:1},horzLine:{color:'rgba(0,207,255,.25)',style:1}},
+    layout:{background:{color:'#000408'},textColor:'#445566',fontFamily:"'JetBrains Mono',monospace"},
+    grid:{vertLines:{color:'#0c1422'},horzLines:{color:'#0c1422'}},
+    crosshair:{vertLine:{color:'rgba(0,207,255,.2)',style:1},horzLine:{color:'rgba(0,207,255,.2)',style:1}},
     rightPriceScale:{borderColor:'#0c1422'},timeScale:{borderColor:'#0c1422',timeVisible:true,secondsVisible:false},
-    watermark:{visible:true,text:'ZB TERMINAL',color:'rgba(200,255,0,.02)',fontSize:48,fontFamily:"'Space Grotesk',sans-serif"}
+    watermark:{visible:true,text:'ZB BROKER',color:'rgba(200,255,0,.018)',fontSize:52,fontFamily:"'Space Grotesk',sans-serif"}
   });
   series=chart.addCandlestickSeries({upColor:'#c8ff00',downColor:'#ff4520',borderUpColor:'#c8ff00',borderDownColor:'#ff4520',wickUpColor:'#a8d900',wickDownColor:'#cc3010'});
   new ResizeObserver(()=>chart.applyOptions({width:area.clientWidth,height:area.clientHeight})).observe(area);
 }
-
-// Public klines endpoint — no API key needed, works on GitHub Pages
 async function loadK(){
-  try{const r=await fetch(`https://api.binance.com/api/v3/klines?symbol=${S.sym}&interval=${S.tf}&limit=400`);const d=await r.json();series.setData(d.map(k=>({time:Math.floor(k[0]/1000),open:+k[1],high:+k[2],low:+k[3],close:+k[4]})));}catch(e){lg('WARN','Failed to load klines','','');}
+  try{const r=await fetch('https://api.binance.com/api/v3/klines?symbol='+S.sym+'&interval='+S.tf+'&limit=400');const d=await r.json();series.setData(d.map(k=>({time:Math.floor(k[0]/1000),open:+k[1],high:+k[2],low:+k[3],close:+k[4]})));}catch(e){lg('WARN','Failed to load klines','','');}
 }
-
 function updLine(k,price){
   if(clines[k]){try{series.removePriceLine(clines[k]);}catch(e){}}
   if(price===null){clines[k]=null;return;}
@@ -689,162 +925,163 @@ function updLine(k,price){
   const c=cfg[k];clines[k]=series.createPriceLine({price,color:c.color,lineWidth:1,lineStyle:c.style,axisLabelVisible:true,title:c.title});
 }
 
-// WEBSOCKETS
+// WEBSOCKET
 function connectWS(){
   if(S.priceWs){S.priceWs.onclose=null;S.priceWs.close();}
   if(S.klineWs){S.klineWs.onclose=null;S.klineWs.close();}
   const sym=S.sym.toLowerCase(),base=WSB[S.mode];
-  S.priceWs=new WebSocket(`${base}${sym}@aggTrade`);
+  S.priceWs=new WebSocket(base+sym+'@aggTrade');
   S.priceWs.onopen=()=>setConn(true);
   S.priceWs.onmessage=e=>{const d=JSON.parse(e.data),p=+d.p;S.prev=S.price;S.price=p;updPriceUI(p);updPosUI(p);updEstUI(p);if(S.botOn&&!S.inPos)chkBuy(p);if(S.botOn&&S.inPos)chkSell(p);};
   S.priceWs.onerror=()=>setConn(false);
   S.priceWs.onclose=()=>{setConn(false);setTimeout(connectWS,3000);};
-  S.klineWs=new WebSocket(`${base}${sym}@kline_${S.tf}`);
+  S.klineWs=new WebSocket(base+sym+'@kline_'+S.tf);
   S.klineWs.onmessage=e=>{const k=JSON.parse(e.data).k;series.update({time:Math.floor(k.t/1000),open:+k.o,high:+k.h,low:+k.l,close:+k.c});if(k.x&&S.botOn&&S.s2Up&&S.sell2Line!==null&&document.getElementById('s2tf').value===S.tf)s2Move();};
 }
-function s2Move(){const mv=+document.getElementById('s2mv').value||5;S.sell2Line=+(S.sell2Line+mv).toFixed(8);updLine('sell2',S.sell2Line);updLS();lg('INFO',`2nd Sell auto ↑ $${mv}`,`$${S.sell2Line.toFixed(2)}`,'')}
+function s2Move(){const mv=+document.getElementById('s2mv').value||5;S.sell2Line=+(S.sell2Line+mv).toFixed(8);updLine('sell2',S.sell2Line);updLS();lg('INFO','2nd Sell auto ↑ $'+mv,'$'+S.sell2Line.toFixed(2),'');}
 function setConn(ok){document.getElementById('cdot').className='dot'+(ok?' on':' off');document.getElementById('ctxt').textContent=ok?'Connected':'Reconnecting…';}
 
-// BOT
+// BOT LOGIC
 function chkBuy(p){if(S.buyLine!==null&&p<=S.buyLine)exBuy(p);}
 function chkSell(p){
   if(S.sell2Line!==null&&p>=S.sell2Line){exSell('2ND SELL HIT',p);return;}
   if(S.sell1Line!==null){
-    if(S.passLine!==null&&p>=S.passLine&&!S.passZone){S.passZone=true;set('lvzone','Active ✓');document.getElementById('lvzone').className='srr up';lg('INFO','Pass zone active',`$${p.toFixed(2)}`,'');}
+    if(S.passLine!==null&&p>=S.passLine&&!S.passZone){S.passZone=true;set('lvzone','ACTIVE');document.getElementById('lvzone').className='dr-v up';lg('INFO','Pass zone active','$'+p.toFixed(2),'');}
     if(S.passZone&&p<=S.sell1Line){exSell('1ST SELL HIT',p);return;}
-    if(S.passLine===null&&S.sell2Line!==null&&p>=S.sell1Line&&!S.passZone){S.passZone=true;}
-    if(S.passZone&&S.passLine===null&&p<=S.sell1Line){exSell('1ST SELL HIT',p);}
+    if(S.passLine===null&&S.sell2Line!==null&&p>=S.sell1Line&&!S.passZone)S.passZone=true;
+    if(S.passZone&&S.passLine===null&&p<=S.sell1Line)exSell('1ST SELL HIT',p);
   }
 }
 async function exBuy(p){
   const q=calcQ(p);if(q<=0){lg('WARN','Qty too small','','');return;}
-  if(S.mode==='demo'){
-    const cost=q*p;
-    if(S.demoUSDT<cost){lg('WARN','Insufficient demo USDT balance','','');return;}
-    S.demoUSDT-=cost;S.demoCoin+=q;
-    enPos(p,q);lg('BUY','[PAPER] Market buy',`$${p.toFixed(2)}`,`qty:${q}`);
-  }else{
-    const r=await placeOrder('BUY',q);
-    if(r.orderId){enPos(p,q);lg('BUY',`Order #${r.orderId}`,`$${p.toFixed(2)}`,`qty:${q}`);}
-    else lg('WARN',`Buy failed: ${r.msg}`,'','');
-  }
+  if(S.mode==='demo'){const cost=q*p;if(S.demoUSDT<cost){lg('WARN','Insufficient demo USDT','','');return;}S.demoUSDT-=cost;S.demoCoin+=q;enPos(p,q);lg('BUY','[PAPER] Market buy','$'+p.toFixed(2),'qty:'+q);}
+  else{const r=await placeOrder('BUY',q);if(r.orderId){enPos(p,q);lg('BUY','Order #'+r.orderId,'$'+p.toFixed(2),'qty:'+q);}else lg('WARN','Buy failed: '+r.msg,'','');}
   fetchBal();
 }
 async function exSell(reason,p){
   const q=S.qty;
-  if(S.mode==='demo'){
-    const proceeds=q*p;
-    S.demoUSDT+=proceeds;S.demoCoin=Math.max(0,S.demoCoin-q);
-    const tradePnl=proceeds-(q*S.entry);
-    clPos(p);
-    lg('SELL',`[PAPER] ${reason}`,`$${p.toFixed(2)}`,`PnL: $${tradePnl.toFixed(2)}`);
-  }else{
-    const r=await placeOrder('SELL',q);
-    if(r.orderId){clPos(p);lg('SELL',`${reason} #${r.orderId}`,`$${p.toFixed(2)}`,``);}
-    else lg('WARN',`Sell failed: ${r.msg}`,'','');
-  }
+  if(S.mode==='demo'){const proceeds=q*p;S.demoUSDT+=proceeds;S.demoCoin=Math.max(0,S.demoCoin-q);const tpnl=proceeds-(q*S.entry);clPos(p);lg('SELL','[PAPER] '+reason,'$'+p.toFixed(2),'PnL: $'+tpnl.toFixed(2));}
+  else{const r=await placeOrder('SELL',q);if(r.orderId){clPos(p);lg('SELL',reason+' #'+r.orderId,'$'+p.toFixed(2),'');}else lg('WARN','Sell failed: '+r.msg,'','');}
   fetchBal();
 }
-function enPos(p,q){S.inPos=true;S.entry=p;S.qty=q;S.passZone=false;set('bpos','YES');document.getElementById('bpos').className='srr up';document.getElementById('borb').className='borb pos';botPhase('In Position');startS1();}
-function clPos(p){const pnl=(p-S.entry)*S.qty;S.pnl+=pnl;S.trades++;if(pnl>0)S.wins++;S.inPos=false;S.entry=0;S.qty=0;S.passZone=false;stopS1();set('bpos','NO');document.getElementById('bpos').className='srr';document.getElementById('borb').className='borb run';botPhase('Waiting for buy');set('lvzone','Inactive');document.getElementById('lvzone').className='srr';['pentry','pqty','pval','ppnl','ppct'].forEach(id=>set(id,'—'));updStats();}
-function startS1(){stopS1();if(S.sell1Line===null)return;const ms=(+document.getElementById('s1intv').value||5)*(+document.getElementById('s1unit').value||60)*1000;S.s1Timer=setInterval(()=>{if(!S.inPos||!S.botOn||S.sell1Line===null){stopS1();return;}if(S.sell2Line!==null&&S.price>=S.sell1Line&&S.price<=S.sell2Line){const mv=+document.getElementById('s1mv').value||5;S.sell1Line=+(S.sell1Line+mv).toFixed(8);updLine('sell1',S.sell1Line);updLS();document.getElementById('s1trail').textContent=`Trail: ↑$${mv} → $${S.sell1Line.toFixed(2)}`;lg('INFO',`1st Sell trailed ↑ $${mv}`,`$${S.sell1Line.toFixed(2)}`,'');if(S.price<=S.sell1Line)exSell('TRAIL TOUCH',S.price);}},ms);document.getElementById('s1trail').textContent='Trail: running ▶';}
+function enPos(p,q){S.inPos=true;S.entry=p;S.qty=q;S.passZone=false;set('bpos','YES');document.getElementById('bpos').className='dr-v up';set('hdr-pos','YES');document.getElementById('borb').className='borb pos';botPhase('In Position');startS1();}
+function clPos(p){
+  const pnl=(p-S.entry)*S.qty;S.pnl+=pnl;S.trades++;if(pnl>0)S.wins++;
+  S.inPos=false;S.entry=0;S.qty=0;S.passZone=false;stopS1();
+  set('bpos','NO');document.getElementById('bpos').className='dr-v';
+  set('hdr-pos','NO');
+  document.getElementById('borb').className='borb run';
+  botPhase('Waiting for buy');
+  set('lvzone','—');document.getElementById('lvzone').className='dr-v dim';
+  ['pentry','pqty','pval','ppnl','ppct'].forEach(id=>set(id,'—'));
+  updStats();
+}
+function startS1(){stopS1();if(S.sell1Line===null)return;const ms=(+document.getElementById('s1intv').value||5)*(+document.getElementById('s1unit').value||60)*1000;S.s1Timer=setInterval(()=>{if(!S.inPos||!S.botOn||S.sell1Line===null){stopS1();return;}if(S.sell2Line!==null&&S.price>=S.sell1Line&&S.price<=S.sell2Line){const mv=+document.getElementById('s1mv').value||5;S.sell1Line=+(S.sell1Line+mv).toFixed(8);updLine('sell1',S.sell1Line);updLS();document.getElementById('s1trail').textContent='Trail: ↑$'+mv+' → $'+S.sell1Line.toFixed(2);lg('INFO','1st Sell trailed ↑ $'+mv,'$'+S.sell1Line.toFixed(2),'');if(S.price<=S.sell1Line)exSell('TRAIL TOUCH',S.price);}},ms);document.getElementById('s1trail').textContent='Trail: running ▶';}
 function stopS1(){if(S.s1Timer){clearInterval(S.s1Timer);S.s1Timer=null;}document.getElementById('s1trail').textContent='Trail: inactive';}
 function calcQ(p){const amt=+document.getElementById('tamt').value||0,unit=document.getElementById('tunit').value;return+(unit==='usdt'?amt/p:amt).toFixed(6);}
-
 function togBot(){
   S.botOn=!S.botOn;
   const btn=document.getElementById('ss'),orb=document.getElementById('borb');
-  if(S.botOn){btn.textContent='■ Stop Bot';btn.className='stop';orb.className='borb run';set('bstate','Running');botPhase('Waiting for buy');lg('INFO',`Bot started — ${S.mode.toUpperCase()}`,S.sym,'');}
-  else{btn.textContent='▶ Start Bot';btn.className='go';orb.className='borb';set('bstate','Idle');botPhase('—');stopS1();lg('INFO','Bot stopped','','');}
+  if(S.botOn){btn.textContent='■ Stop';btn.className='stop';if(!S.inPos)orb.className='borb run';set('bstate','Running');botPhase('Waiting for buy');lg('INFO','Bot started — '+S.mode.toUpperCase(),S.sym,'');}
+  else{btn.textContent='▶ Start';btn.className='go';if(!S.inPos)orb.className='borb';set('bstate','Idle');botPhase('—');stopS1();lg('INFO','Bot stopped','','');}
 }
 function botPhase(t){set('bphase',t);}
 
 // LINES
 const linpMap={buy:'buyp',pass:'passp',sell1:'s1p',sell2:'s2p'};
-function setL(k){const v=+document.getElementById(linpMap[k]).value;if(!v||v<=0){lg('WARN',`Invalid price for ${k}`,'','');return;}S[`${k}Line`]=v;updLine(k,v);updLS();lg('INFO',`${k.toUpperCase()} line set`,`$${v.toFixed(2)}`,'')}
-function clrL(k){S[`${k}Line`]=null;updLine(k,null);updLS();}
+function setL(k){const v=+document.getElementById(linpMap[k]).value;if(!v||v<=0){lg('WARN','Invalid price for '+k,'','');return;}S[k+'Line']=v;updLine(k,v);updLS();lg('INFO',k.toUpperCase()+' line set','$'+v.toFixed(2),'');}
+function clrL(k){S[k+'Line']=null;updLine(k,null);updLS();}
 function useC(k){if(!S.price)return;document.getElementById(linpMap[k]).value=S.price.toFixed(2);}
-
 function updLS(){
-  const cfg=[{k:'buy',dot:'ldbuy',val:'lvbuy',badge:'bbadge'},{k:'pass',dot:'ldpass',val:'lvpass',badge:'pbadge'},{k:'sell1',dot:'lds1',val:'lvs1',badge:'s1badge'},{k:'sell2',dot:'lds2',val:'lvs2',badge:'s2badge'}];
-  const cls={buy:'buy',pass:'pass',sell1:'s1',sell2:'s2'};
-  cfg.forEach(({k,dot,val,badge})=>{
-    const v=S[`${k}Line`],c=cls[k];
-    const de=document.getElementById(dot),ve=document.getElementById(val),be=document.getElementById(badge);
-    if(v!==null){de.className=`ldot ${c} on`;ve.textContent=`$${v.toFixed(2)}`;ve.className='lsv';be.textContent=`$${v.toFixed(2)}`;be.className=`lcb on ${c}`;}
-    else{de.className=`ldot ${c}`;ve.textContent='Not set';ve.className='lsv ns';be.textContent='Off';be.className='lcb';}
+  const cfg=[{k:'buy',dot:'ldbuy',val:'lvbuy',badge:'bbadge',c:'buy'},{k:'pass',dot:'ldpass',val:'lvpass',badge:'pbadge',c:'pass'},{k:'sell1',dot:'lds1',val:'lvs1',badge:'s1badge',c:'s1'},{k:'sell2',dot:'lds2',val:'lvs2',badge:'s2badge',c:'s2'}];
+  cfg.forEach(({k,dot,val,badge,c})=>{
+    const v=S[k+'Line'],de=document.getElementById(dot),ve=document.getElementById(val),be=document.getElementById(badge);
+    if(v!==null){de.className='ldot '+c+' on';ve.textContent='$'+v.toFixed(2);ve.className='lsv';be.textContent='$'+v.toFixed(2);be.className='line-badge on '+c;}
+    else{de.className='ldot '+c;ve.textContent='Not set';ve.className='lsv ns';be.textContent='Off';be.className='line-badge';}
   });
 }
 function togS2(){S.s2Up=!S.s2Up;document.getElementById('s2cb').className='cbbox'+(S.s2Up?' on':'');document.getElementById('s2auto').style.display=S.s2Up?'block':'none';}
-
-// MANUAL
 function manBuy(){if(!S.price){lg('WARN','No price','','');return;}if(S.inPos){lg('WARN','Already in position','','');return;}exBuy(S.price);}
 function manSell(){if(!S.inPos){lg('WARN','No open position','','');return;}exSell('MANUAL',S.price);}
 
 // UI
-function updPriceUI(p){const e=document.getElementById('tbprice');e.textContent=p.toFixed(p>100?2:4);e.className=p>=S.prev?'up':'dn';}
-function updPosUI(p){if(!S.inPos)return;const pnl=(p-S.entry)*S.qty,pct=((p-S.entry)/S.entry)*100;set('pentry',`$${S.entry.toFixed(2)}`);set('pqty',S.qty.toFixed(6));set('pval',`$${(S.qty*p).toFixed(2)}`);const pe=document.getElementById('ppnl');pe.textContent=`$${pnl.toFixed(4)}`;pe.className='srr '+(pnl>=0?'up':'dn');const pp=document.getElementById('ppct');pp.textContent=`${pct.toFixed(3)}%`;pp.className='srr '+(pct>=0?'up':'dn');}
-function updEstUI(p){const amt=+document.getElementById('tamt').value||0,unit=document.getElementById('tunit').value;set('test',unit==='usdt'?`≈ ${(amt/p).toFixed(6)} ${S.sym.replace('USDT','')}`:`≈ $${(amt*p).toFixed(2)} USDT`);}
-function updStats(){set('ssn',S.trades);const pe=document.getElementById('sspnl');pe.textContent=`$${S.pnl.toFixed(4)}`;pe.className='srr '+(S.pnl>=0?'up':'dn');set('sswr',S.trades>0?`${((S.wins/S.trades)*100).toFixed(1)}%`:'—');}
+function updPriceUI(p){
+  const e=document.getElementById('tbprice');e.textContent=p.toFixed(p>100?2:4);e.className=p>=S.prev?'up':'dn';
+}
+function updPosUI(p){
+  if(!S.inPos)return;
+  const pnl=(p-S.entry)*S.qty,pct=((p-S.entry)/S.entry)*100;
+  set('pentry','$'+S.entry.toFixed(2));set('pqty',S.qty.toFixed(6));set('pval','$'+(S.qty*p).toFixed(2));
+  const pe=document.getElementById('ppnl');pe.textContent='$'+pnl.toFixed(4);pe.className='dr-v '+(pnl>=0?'up':'dn');
+  const pp=document.getElementById('ppct');pp.textContent=pct.toFixed(3)+'%';pp.className='dr-v '+(pct>=0?'up':'dn');
+}
+function updEstUI(p){
+  const amt=+document.getElementById('tamt').value||0,unit=document.getElementById('tunit').value;
+  set('test',unit==='usdt'?'≈ '+(amt/p).toFixed(6)+' '+S.sym.replace('USDT',''):'≈ $'+(amt*p).toFixed(2)+' USDT');
+}
+function updStats(){
+  set('ssn',S.trades);set('hdr-trades',S.trades);
+  const pe=document.getElementById('sspnl');pe.textContent='$'+S.pnl.toFixed(4);pe.className='dr-v '+(S.pnl>=0?'up':'dn');
+  const hp=document.getElementById('hdr-pnl');hp.textContent='$'+S.pnl.toFixed(2);hp.className='tb-stat-v '+(S.pnl>=0?'up':'dn');
+  set('sswr',S.trades>0?((S.wins/S.trades)*100).toFixed(1)+'%':'—');
+}
 function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 
 // SYM / TF / MODE
-function chSym(){S.sym=document.getElementById('sym').value;set('bclbl',S.sym.replace('USDT',''));loadK();connectWS();}
-function chTF(){S.tf=document.getElementById('tf').value;loadK();if(S.klineWs){S.klineWs.onclose=null;S.klineWs.close();}const sym=S.sym.toLowerCase();S.klineWs=new WebSocket(`${WSB[S.mode]}${sym}@kline_${S.tf}`);S.klineWs.onmessage=e=>{const k=JSON.parse(e.data).k;series.update({time:Math.floor(k.t/1000),open:+k.o,high:+k.h,low:+k.l,close:+k.c});if(k.x&&S.botOn&&S.s2Up&&S.sell2Line!==null&&document.getElementById('s2tf').value===S.tf)s2Move();};}
+function chSym(){S.sym=document.getElementById('sym').value;const cl=S.sym.replace('USDT','');set('bclbl',cl);set('avbl-clbl',cl);loadK();connectWS();}
+function chTF(){S.tf=document.getElementById('tf').value;loadK();if(S.klineWs){S.klineWs.onclose=null;S.klineWs.close();}S.klineWs=new WebSocket(WSB[S.mode]+S.sym.toLowerCase()+'@kline_'+S.tf);S.klineWs.onmessage=e=>{const k=JSON.parse(e.data).k;series.update({time:Math.floor(k.t/1000),open:+k.o,high:+k.h,low:+k.l,close:+k.c});if(k.x&&S.botOn&&S.s2Up&&S.sell2Line!==null&&document.getElementById('s2tf').value===S.tf)s2Move();};}
 function setMode(m){
-  S.mode=m;
-  localStorage.setItem('zb_mode',m);
-  syncMode();connectWS();loadK();
+  S.mode=m;localStorage.setItem('zb_mode',m);syncMode();connectWS();loadK();
   if(m==='demo'){S.demoUSDT=10000;S.demoCoin=0;S.apiKey='';S.apiSecret='';updateApiDisp();}
-  fetchBal();
-  lg('INFO','Mode: '+m.toUpperCase(),'','');
+  fetchBal();lg('INFO','Mode: '+m.toUpperCase(),'','');
 }
-function syncMode(){document.getElementById('hmd').className=S.mode==='demo'?'active demo':'demo';document.getElementById('hml').className=S.mode==='live'?'active live':'live';}
+function syncMode(){
+  document.getElementById('hmd').className=S.mode==='demo'?'active demo':'demo';
+  document.getElementById('hml').className=S.mode==='live'?'active live':'live';
+  const badge=document.getElementById('mode-badge');
+  badge.textContent=S.mode.toUpperCase();
+  badge.className='tb-mode-badge '+S.mode;
+  set('log-mode-lbl',S.mode.toUpperCase());
+}
 
 // API PANEL
 function updateApiDisp(){
   const has=S.apiKey&&S.apiSecret;
   document.getElementById('adot').className='dot'+(has?' on':' off');
-  set('abartxt',has?'API connected':'No API keys');
+  set('abartxt',has?'Live API connected':S.mode==='demo'?'Paper trading mode':'No API keys');
   const ke=document.getElementById('kpkey'),se=document.getElementById('kpsec');
-  ke.textContent=S.apiKey?(kv.key?S.apiKey:S.apiKey.slice(0,6)+'••••'+S.apiKey.slice(-4)):'—';ke.className='akv'+(S.apiKey?'':' ns');
-  se.textContent=S.apiSecret?(kv.sec?S.apiSecret:'••••••••••••••••••••'):'—';se.className='akv'+(S.apiSecret?'':' ns');
+  ke.textContent=S.apiKey?(kv.key?S.apiKey:S.apiKey.slice(0,6)+'••••'+S.apiKey.slice(-4)):'—';
+  se.textContent=S.apiSecret?(kv.sec?S.apiSecret:'••••••••••••••••••••'):'—';
 }
 function tKV(w){kv[w]=!kv[w];updateApiDisp();}
-function tEditForm(){editOpen=!editOpen;const f=document.getElementById('eform'),b=document.getElementById('etog');f.className=editOpen?'open':'';b.textContent=editOpen?'✕ Cancel':'✎ Change API Keys';if(editOpen){document.getElementById('eikey').value=S.apiKey;document.getElementById('eisec').value=S.apiSecret;}}
+function tEditForm(){editOpen=!editOpen;document.getElementById('eform').className=editOpen?'api-edit-panel open':'api-edit-panel';if(editOpen){document.getElementById('eikey').value=S.apiKey;document.getElementById('eisec').value=S.apiSecret;}}
 function tIV(id,btn){const e=document.getElementById(id);e.type=e.type==='password'?'text':'password';btn.style.color=e.type==='text'?'var(--sky)':'';}
 async function saveInline(){const k=document.getElementById('eikey').value.trim(),s=document.getElementById('eisec').value.trim();if(!k||!s){lg('WARN','Both fields required','','');return;}S.apiKey=k;S.apiSecret=s;localStorage.setItem('zb_k',k);localStorage.setItem('zb_s',s);updateApiDisp();tEditForm();lg('INFO','API keys updated','','');fetchBal();}
-async function testApi(){const k=document.getElementById('eikey').value.trim(),s=document.getElementById('eisec').value.trim();if(!k||!s){lg('WARN','Enter keys to test','','');return;}const ok=[S.apiKey,S.apiSecret];S.apiKey=k;S.apiSecret=s;lg('INFO','Testing API…','','');try{const d=await apiGet('/api/v3/account');if(d.balances){lg('INFO','API test PASSED ✓','','');}else{lg('WARN',`Test failed: ${d.msg}`,'','');[S.apiKey,S.apiSecret]=ok;}}catch(e){lg('WARN',`Test error: ${e.message}`,'','');[S.apiKey,S.apiSecret]=ok;}updateApiDisp();}
+async function testApi(){const k=document.getElementById('eikey').value.trim(),s=document.getElementById('eisec').value.trim();if(!k||!s){lg('WARN','Enter keys to test','','');return;}const bk=[S.apiKey,S.apiSecret];S.apiKey=k;S.apiSecret=s;lg('INFO','Testing API…','','');try{const d=await apiGet('/api/v3/account');if(d.balances)lg('INFO','API test PASSED ✓','','');else{lg('WARN','Test failed: '+d.msg,'','');[S.apiKey,S.apiSecret]=bk;}}catch(e){lg('WARN','Test error: '+e.message,'','');[S.apiKey,S.apiSecret]=bk;}updateApiDisp();}
 function clrKeys(){if(!confirm('Clear saved API keys?'))return;S.apiKey='';S.apiSecret='';localStorage.removeItem('zb_k');localStorage.removeItem('zb_s');document.getElementById('eikey').value='';document.getElementById('eisec').value='';updateApiDisp();lg('WARN','API keys cleared','','');}
-
-function disc(){if(!confirm('Disconnect?'))return;if(S.botOn)togBot();if(S.priceWs){S.priceWs.onclose=null;S.priceWs.close();}if(S.klineWs){S.klineWs.onclose=null;S.klineWs.close();}document.getElementById('app').style.display='none';document.getElementById('gate').style.display='flex';document.getElementById('gerr').style.display='none';document.getElementById('gstatus').textContent='';document.getElementById('gspin').style.display='none';const btn=document.getElementById('gbtn');btn.textContent='Connect to Binance';btn.disabled=false;document.getElementById('g-key').value=localStorage.getItem('zb_k')||'';document.getElementById('g-sec').value=localStorage.getItem('zb_s')||'';}
-
+function disc(){if(!confirm('Disconnect?'))return;if(S.botOn)togBot();if(S.priceWs){S.priceWs.onclose=null;S.priceWs.close();}if(S.klineWs){S.klineWs.onclose=null;S.klineWs.close();}document.getElementById('app').style.display='none';document.getElementById('gate').style.display='flex';document.getElementById('gerr').style.display='none';document.getElementById('gstatus').textContent='';document.getElementById('gspin').style.display='none';const btn=document.getElementById('gbtn');btn.disabled=false;document.getElementById('g-key').value=localStorage.getItem('zb_k')||'';document.getElementById('g-sec').value=localStorage.getItem('zb_s')||'';}
 function openMod(){document.getElementById('mkey').value=S.apiKey;document.getElementById('msec').value=S.apiSecret;document.getElementById('mbg').className='open';}
 function closeMod(){document.getElementById('mbg').className='';}
 function saveMod(){const k=document.getElementById('mkey').value.trim(),s=document.getElementById('msec').value.trim();if(!k||!s)return;S.apiKey=k;S.apiSecret=s;localStorage.setItem('zb_k',k);localStorage.setItem('zb_s',s);updateApiDisp();closeMod();lg('INFO','API keys saved','','');fetchBal();}
 
-function lg(type,msg,price,extra){const t=new Date().toTimeString().slice(0,8),el=document.createElement('div');el.className='le';el.innerHTML=`<span class="let">${t}</span><span class="lek ${type}">${type}</span><span class="lem">${msg}</span><span class="lep">${price}</span><span class="lex">${extra}</span>`;const c=document.getElementById('logent');c.insertBefore(el,c.firstChild);if(c.children.length>300)c.removeChild(c.lastChild);}
+// LOG
+function lg(type,msg,price,extra){const t=new Date().toTimeString().slice(0,8),el=document.createElement('div');el.className='le';el.innerHTML='<span class="let">'+t+'</span><span class="lek '+type+'">'+type+'</span><span class="lem">'+msg+'</span><span class="lep">'+price+'</span><span class="lex">'+extra+'</span>';const c=document.getElementById('logent');c.insertBefore(el,c.firstChild);if(c.children.length>300)c.removeChild(c.lastChild);}
 function clrLog(){document.getElementById('logent').innerHTML='';}
 
 // BOOT
 (function boot(){
-  // Restore saved mode
-  const savedMode = localStorage.getItem('zb_mode')||'demo';
+  const savedMode=localStorage.getItem('zb_mode')||'demo';
   gateMode(savedMode);
-
   const k=localStorage.getItem('zb_k')||'',s=localStorage.getItem('zb_s')||'';
   if(savedMode==='live'&&k&&s){
     S.apiKey=k;S.apiSecret=s;
-    document.getElementById('g-key').value=k;
-    document.getElementById('g-sec').value=s;
-    document.getElementById('gspin').style.display='block';
-    document.getElementById('gstatus').textContent='Verifying saved keys…';
+    document.getElementById('g-key').value=k;document.getElementById('g-sec').value=s;
+    document.getElementById('gspin').style.display='block';document.getElementById('gstatus').textContent='Verifying saved keys…';
     apiGet('/api/v3/account').then(d=>{
-      if(d.balances){launch();}
-      else{S.apiKey='';S.apiSecret='';localStorage.removeItem('zb_k');localStorage.removeItem('zb_s');document.getElementById('gspin').style.display='none';document.getElementById('gstatus').textContent='';gErr((d.msg||'Saved keys rejected by Binance.')+' Please re-enter.');}
-    }).catch(e=>{S.apiKey='';S.apiSecret='';document.getElementById('gspin').style.display='none';document.getElementById('gstatus').textContent='';const onHttps=location.protocol==='https:';gErr(onHttps?'Connection failed: '+e.message:'Open via HTTPS (GitHub Pages). Error: '+e.message);});
+      if(d.balances)launch();
+      else{S.apiKey='';S.apiSecret='';localStorage.removeItem('zb_k');localStorage.removeItem('zb_s');document.getElementById('gspin').style.display='none';document.getElementById('gstatus').textContent='';gErr((d.msg||'Saved keys rejected.')+' Please re-enter.');}
+    }).catch(e=>{S.apiKey='';S.apiSecret='';document.getElementById('gspin').style.display='none';document.getElementById('gstatus').textContent='';gErr(location.protocol==='https:'?'Connection failed: '+e.message:'Open via HTTPS (GitHub Pages). Error: '+e.message);});
   }
-  // Demo mode: just show the gate (user clicks button to start)
 })();
 </script>
 </body>
