@@ -971,7 +971,7 @@ function chkSell(p) {
 
   // ── 2ND SELL LINE: instant sell, always, highest priority ──
   if (S.sell2Line !== null && p >= S.sell2Line) {
-    exSell('2ND SELL LINE HIT', p);
+    exSell('2ND SELL LINE HIT', p, 'sell2');
     return;
   }
 
@@ -998,12 +998,12 @@ function chkSell(p) {
       }
       // If in zone and price drops back to or below sell1 → sell
       if (S.passZone && S.inZone && p <= S.sell1Line) {
-        exSell('1ST SELL LINE HIT (reversal)', p);
+        exSell('1ST SELL LINE HIT (reversal)', p, 'sell1');
         return;
       }
       // If pass zone active and price drops to sell1 BEFORE entering zone above it → sell
       if (S.passZone && !S.inZone && p <= S.sell1Line) {
-        exSell('1ST SELL LINE HIT (pass zone, below sell1)', p);
+        exSell('1ST SELL LINE HIT (pass zone, below sell1)', p, 'sell1');
         return;
       }
 
@@ -1019,7 +1019,7 @@ function chkSell(p) {
       }
       // If in zone and price drops BACK to or below sell1 → sell
       if (S.inZone && p <= S.sell1Line) {
-        exSell('1ST SELL LINE HIT (trail reversal)', p);
+        exSell('1ST SELL LINE HIT (trail reversal)', p, 'sell1');
         return;
       }
     }
@@ -1062,7 +1062,7 @@ async function exBuy(p) {
 }
 
 // ── EXECUTE SELL ─────────────────────────────────────────────
-async function exSell(reason, p) {
+async function exSell(reason, p, triggeredLine) {
   if (S.executing || !S.inPos) return;
   S.executing = true;
   const q = S.qty;
@@ -1073,13 +1073,13 @@ async function exSell(reason, p) {
     S.demoUSDT += proceeds;
     S.demoCoin = Math.max(0, S.demoCoin - q);
     const tpnl = proceeds - (q * entryPrice);
-    clPos(p);
+    clPos(p, triggeredLine);
     lg('SELL', '[PAPER] ' + reason, '$' + p.toFixed(2), 'PnL: $' + tpnl.toFixed(2));
   } else {
     try {
       const r = await placeOrder('SELL', q);
       if (r.orderId) {
-        clPos(p);
+        clPos(p, triggeredLine);
         lg('SELL', reason + ' | Order #' + r.orderId, '$' + p.toFixed(2), '');
       } else {
         lg('WARN', 'Sell order failed: ' + (r.msg || JSON.stringify(r)), '', '');
@@ -1109,11 +1109,13 @@ function enPos(p, q) {
   document.getElementById('borb').className = 'borb pos';
   botPhase('In position — watching lines');
   startS1();
-  lg('INFO', 'Position opened', '$' + p.toFixed(2), 'qty: ' + q);
+  // ── BUY LINE has done its job — remove it ──────────────────
+  removeLine('buy');
+  lg('INFO', 'Position opened — BUY line removed', '$' + p.toFixed(2), 'qty: ' + q);
 }
 
 // ── CLOSE POSITION ───────────────────────────────────────────
-function clPos(p) {
+function clPos(p, triggeredLine) {
   const pnl = (p - S.entry) * S.qty;
   S.pnl += pnl;
   S.trades++;
@@ -1133,6 +1135,14 @@ function clPos(p) {
   document.getElementById('lvzone').className = 'dr-v dim';
   ['pentry','pqty','pval','ppnl','ppct'].forEach(id => set(id, '—'));
   updStats();
+  // ── Remove the line that did its job ──────────────────────
+  // Pass line is consumed once the trade closes (it was the gate)
+  removeLine('pass');
+  // Remove whichever sell line triggered
+  if (triggeredLine) {
+    removeLine(triggeredLine);
+    lg('INFO', triggeredLine.toUpperCase() + ' line removed after trigger', '', '');
+  }
 }
 
 // ── 1ST SELL TRAILING TIMER ──────────────────────────────────
@@ -1161,7 +1171,7 @@ function startS1() {
       lg('INFO', '1st Sell trailed UP by $' + mv, '$' + S.sell1Line.toFixed(2), '');
       // If trail moved sell1 into current price → sell immediately
       if (S.price <= S.sell1Line && !S.executing) {
-        exSell('1ST SELL TRAIL TOUCHED PRICE', S.price);
+        exSell('1ST SELL TRAIL TOUCHED PRICE', S.price, 'sell1');
       }
     }
   }, ms);
@@ -1203,6 +1213,21 @@ function botPhase(t){set('bphase',t);}
 
 // LINES
 const linpMap={buy:'buyp',pass:'passp',sell1:'s1p',sell2:'s2p'};
+
+// Remove a line completely from chart, state, UI and input field
+// Called automatically when a line finishes its job
+function removeLine(k) {
+  if (!k) return;
+  S[k + 'Line'] = null;
+  // Remove from chart
+  if (clines[k]) { try { series.removePriceLine(clines[k]); } catch(e){} clines[k] = null; }
+  // Clear the input field
+  const inpId = linpMap[k];
+  if (inpId) { const el = document.getElementById(inpId); if (el) el.value = ''; }
+  // Update sidebar
+  updLS();
+  lg('INFO', k.toUpperCase() + ' line job done — removed from chart', '', '');
+}
 function setL(k){
   const v=+document.getElementById(linpMap[k]).value;
   if(!v||v<=0){lg('WARN','Invalid price for '+k,'','');return;}
@@ -1239,7 +1264,7 @@ function manBuy(){
 function manSell(){
   if(!S.inPos){lg('WARN','No open position to sell','','');return;}
   if(S.executing){lg('WARN','Order in progress…','','');return;}
-  exSell('MANUAL SELL',S.price);
+  exSell('MANUAL SELL', S.price, null);
 }
 
 // UI
