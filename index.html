@@ -315,12 +315,14 @@ input,select,button{font-family:inherit;}
       <div class="gtab live" id="gm-live" onclick="gateMode('live')">● Live Account</div>
     </div>
     <div id="gerr"></div>
+    <div id="gate-key-fields">
     <div class="gfl"><label>API Key</label><div class="giw"><input class="gi" id="g-key" type="password" placeholder="Paste Binance API key…" autocomplete="off" onkeydown="if(event.key==='Enter')gConn()"><button class="geye" onclick="gVis('g-key',this)">👁</button></div></div>
     <div class="gfl"><label>API Secret</label><div class="giw"><input class="gi" id="g-sec" type="password" placeholder="Paste Binance API secret…" autocomplete="off" onkeydown="if(event.key==='Enter')gConn()"><button class="geye" onclick="gVis('g-sec',this)">👁</button></div></div>
+    </div><!-- /gate-key-fields -->
     <div id="gspin"><div class="sring"></div></div>
     <div id="gstatus"></div>
     <button class="gcta" id="gbtn" onclick="gConn()">Connect to Binance</button>
-    <div class="ghint">Keys are stored <b>locally in your browser only</b> — never transmitted.<br>Enable <b>Spot Trading</b> permission only. Disable withdrawals.<br>Demo mode needs <b>Binance Testnet</b> keys (testnet.binance.vision).</div>
+    <div class="ghint" id="ghint">Keys are stored <b>locally in your browser only</b> — never transmitted.<br>Enable <b>Spot Trading</b> permission only. Disable withdrawals.<br>Demo mode needs <b>Binance Testnet</b> keys (testnet.binance.vision).</div>
     <div class="gcredit">Developed by <b>MD GOLAM SAROWER ZIHAD</b></div>
   </div>
 </div>
@@ -502,10 +504,11 @@ const S={
   buyLine:null,passLine:null,sell1Line:null,sell2Line:null,
   botOn:false,inPos:false,entry:0,qty:0,passZone:false,
   s1Timer:null,s2Up:false,s2Ws:null,priceWs:null,klineWs:null,
-  trades:0,pnl:0,wins:0
+  trades:0,pnl:0,wins:0,
+  demoUSDT:10000,demoCoin:0   // paper balance for demo mode
 };
-const BASE={live:'https://api.binance.com',demo:'https://testnet.binance.vision'};
-const WSB={live:'wss://stream.binance.com:9443/ws/',demo:'wss://testnet.binance.vision/ws/'};
+const BASE={live:'https://api.binance.com',demo:'https://api.binance.com'};
+const WSB={live:'wss://stream.binance.com:9443/ws/',demo:'wss://stream.binance.com:9443/ws/'};
 let chart,series,clines={},kv={key:false,sec:false},editOpen=false;
 
 // GATE
@@ -513,40 +516,79 @@ function gateMode(m){
   S.mode=m;
   document.getElementById('gm-demo').className='gtab demo'+(m==='demo'?' active':'');
   document.getElementById('gm-live').className='gtab live'+(m==='live'?' active':'');
+  // Demo needs no keys — hide key fields and change button
+  const keyFields = document.getElementById('gate-key-fields');
+  const gbtn = document.getElementById('gbtn');
+  const ghint = document.getElementById('ghint');
+  if(m==='demo'){
+    keyFields.style.display='none';
+    gbtn.textContent='Start Demo Trading';
+    ghint.innerHTML='<b>Demo mode</b> uses real Binance price data with a simulated $10,000 USDT paper balance. No API keys needed.';
+  } else {
+    keyFields.style.display='block';
+    gbtn.textContent='Connect to Binance';
+    ghint.innerHTML='Keys are stored <b>locally in your browser only</b> — never transmitted.<br>Enable <b>Spot Trading</b> permission only. Disable withdrawals.';
+  }
 }
 function gVis(id,btn){const e=document.getElementById(id);e.type=e.type==='password'?'text':'password';btn.style.color=e.type==='text'?'var(--sky)':'';}
 
 async function gConn(){
-  const k=document.getElementById('g-key').value.trim(),s=document.getElementById('g-sec').value.trim();
   const err=document.getElementById('gerr');err.style.display='none';
-  if(!k||!s){gErr('Both API Key and Secret are required.');return;}
+  const btn=document.getElementById('gbtn');
+
+  // ── DEMO MODE: no keys needed, launch straight into paper trading ──
+  if(S.mode==='demo'){
+    S.apiKey='';S.apiSecret='';
+    S.demoUSDT=10000;S.demoCoin=0;
+    localStorage.setItem('zb_mode','demo');
+    btn.disabled=true;
+    document.getElementById('gspin').style.display='block';
+    document.getElementById('gstatus').textContent='Connecting to live price feed…';
+    // Quick check that Binance public API is reachable
+    try{
+      await fetch('https://api.binance.com/api/v3/ping');
+      launch();
+    }catch(e){
+      btn.disabled=false;
+      document.getElementById('gspin').style.display='none';
+      document.getElementById('gstatus').textContent='';
+      gErr('Cannot reach Binance servers. Check your internet connection.');
+    }
+    return;
+  }
+
+  // ── LIVE MODE: require and verify API keys ──
+  const k=document.getElementById('g-key').value.trim(),s=document.getElementById('g-sec').value.trim();
+  if(!k||!s){gErr('Both API Key and Secret are required for Live mode.');return;}
   S.apiKey=k;S.apiSecret=s;
-  const btn=document.getElementById('gbtn');btn.disabled=true;btn.textContent='Verifying…';
+  btn.disabled=true;btn.textContent='Verifying…';
   document.getElementById('gspin').style.display='block';
-  document.getElementById('gstatus').textContent='Contacting Binance…';
+  document.getElementById('gstatus').textContent='Verifying keys with Binance…';
   try{
     const d=await apiGet('/api/v3/account');
     if(d.balances){
-      localStorage.setItem('zb_k',k);localStorage.setItem('zb_s',s);launch();
-    } else {
+      localStorage.setItem('zb_k',k);localStorage.setItem('zb_s',s);
+      localStorage.setItem('zb_mode','live');
+      launch();
+    }else{
       S.apiKey='';S.apiSecret='';
       btn.disabled=false;btn.textContent='Connect to Binance';
       document.getElementById('gspin').style.display='none';
       document.getElementById('gstatus').textContent='';
-      const code = d.code ? ' [code '+d.code+']' : '';
-      gErr((d.msg||'Invalid key or permissions denied.')+code);
+      const code=d.code?'  [Binance code: '+d.code+']':'';
+      gErr((d.msg||'Invalid API key or permission denied.')+code);
     }
   }catch(e){
     S.apiKey='';S.apiSecret='';
     btn.disabled=false;btn.textContent='Connect to Binance';
     document.getElementById('gspin').style.display='none';
     document.getElementById('gstatus').textContent='';
-    // CORS error means the file must be served over HTTP/HTTPS, not opened as file://
-    const isCors = e.message.toLowerCase().includes('fetch') || e.message.toLowerCase().includes('network') || e.message==='Failed to fetch';
-    gErr(isCors
-      ? 'Network error — if opening this file directly from disk, run it via a local web server (e.g. right-click → Open with Live Server). Error: '+e.message
-      : 'Connection error: '+e.message
-    );
+    const onHttps=location.protocol==='https:';
+    if(onHttps){
+      gErr('Connection failed. Possible causes:\n• Wrong API key or secret\n• API key has IP restriction — disable it on Binance\n• Binance is temporarily down\nError: '+e.message);
+    }else{
+      gErr('Open the site via HTTPS (GitHub Pages) not from a local file. Error: '+e.message);
+    }
   }
 }
 function gErr(m){const e=document.getElementById('gerr');e.textContent=m;e.style.display='block';}
@@ -601,10 +643,22 @@ async function placeOrder(side, qty) {
 }
 
 async function fetchBal(){
+  const cl=S.sym.replace('USDT','');
+  set('bclbl',cl);
+  if(S.mode==='demo'){
+    // Paper balance — tracked in state
+    set('busdt',S.demoUSDT.toFixed(2));
+    set('bcrypto',S.demoCoin.toFixed(6));
+    return;
+  }
   if(!S.apiKey)return;
-  try{const d=await apiGet('/api/v3/account');if(!d.balances)return;
-    const u=d.balances.find(b=>b.asset==='USDT'),cl=S.sym.replace('USDT',''),c=d.balances.find(b=>b.asset===cl);
-    set('busdt',u?(+u.free).toFixed(2):'—');set('bclbl',cl);set('bcrypto',c?(+c.free).toFixed(6):'—');}catch(e){}
+  try{
+    const d=await apiGet('/api/v3/account');
+    if(!d.balances)return;
+    const u=d.balances.find(b=>b.asset==='USDT'),c=d.balances.find(b=>b.asset===cl);
+    set('busdt',u?(+u.free).toFixed(2):'—');
+    set('bcrypto',c?(+c.free).toFixed(6):'—');
+  }catch(e){}
 }
 
 // CHART
@@ -664,14 +718,31 @@ function chkSell(p){
 }
 async function exBuy(p){
   const q=calcQ(p);if(q<=0){lg('WARN','Qty too small','','');return;}
-  if(S.mode==='demo'){enPos(p,q);lg('BUY','[DEMO] Market buy',`$${p.toFixed(2)}`,`qty:${q}`);}
-  else{const r=await placeOrder('BUY',q);if(r.orderId){enPos(p,q);lg('BUY',`Order #${r.orderId}`,`$${p.toFixed(2)}`,`qty:${q}`);}else lg('WARN',`Buy failed: ${r.msg}`,'','');}
+  if(S.mode==='demo'){
+    const cost=q*p;
+    if(S.demoUSDT<cost){lg('WARN','Insufficient demo USDT balance','','');return;}
+    S.demoUSDT-=cost;S.demoCoin+=q;
+    enPos(p,q);lg('BUY','[PAPER] Market buy',`$${p.toFixed(2)}`,`qty:${q}`);
+  }else{
+    const r=await placeOrder('BUY',q);
+    if(r.orderId){enPos(p,q);lg('BUY',`Order #${r.orderId}`,`$${p.toFixed(2)}`,`qty:${q}`);}
+    else lg('WARN',`Buy failed: ${r.msg}`,'','');
+  }
   fetchBal();
 }
 async function exSell(reason,p){
   const q=S.qty;
-  if(S.mode==='demo'){clPos(p);lg('SELL',`[DEMO] ${reason}`,`$${p.toFixed(2)}`,`qty:${q}`);}
-  else{const r=await placeOrder('SELL',q);if(r.orderId){clPos(p);lg('SELL',`${reason} #${r.orderId}`,`$${p.toFixed(2)}`,``);}else lg('WARN',`Sell failed: ${r.msg}`,'','');}
+  if(S.mode==='demo'){
+    const proceeds=q*p;
+    S.demoUSDT+=proceeds;S.demoCoin=Math.max(0,S.demoCoin-q);
+    const tradePnl=proceeds-(q*S.entry);
+    clPos(p);
+    lg('SELL',`[PAPER] ${reason}`,`$${p.toFixed(2)}`,`PnL: $${tradePnl.toFixed(2)}`);
+  }else{
+    const r=await placeOrder('SELL',q);
+    if(r.orderId){clPos(p);lg('SELL',`${reason} #${r.orderId}`,`$${p.toFixed(2)}`,``);}
+    else lg('WARN',`Sell failed: ${r.msg}`,'','');
+  }
   fetchBal();
 }
 function enPos(p,q){S.inPos=true;S.entry=p;S.qty=q;S.passZone=false;set('bpos','YES');document.getElementById('bpos').className='srr up';document.getElementById('borb').className='borb pos';botPhase('In Position');startS1();}
@@ -720,7 +791,14 @@ function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 // SYM / TF / MODE
 function chSym(){S.sym=document.getElementById('sym').value;set('bclbl',S.sym.replace('USDT',''));loadK();connectWS();}
 function chTF(){S.tf=document.getElementById('tf').value;loadK();if(S.klineWs){S.klineWs.onclose=null;S.klineWs.close();}const sym=S.sym.toLowerCase();S.klineWs=new WebSocket(`${WSB[S.mode]}${sym}@kline_${S.tf}`);S.klineWs.onmessage=e=>{const k=JSON.parse(e.data).k;series.update({time:Math.floor(k.t/1000),open:+k.o,high:+k.h,low:+k.l,close:+k.c});if(k.x&&S.botOn&&S.s2Up&&S.sell2Line!==null&&document.getElementById('s2tf').value===S.tf)s2Move();};}
-function setMode(m){S.mode=m;syncMode();connectWS();loadK();lg('INFO',`Mode: ${m.toUpperCase()}`,'','');}
+function setMode(m){
+  S.mode=m;
+  localStorage.setItem('zb_mode',m);
+  syncMode();connectWS();loadK();
+  if(m==='demo'){S.demoUSDT=10000;S.demoCoin=0;S.apiKey='';S.apiSecret='';updateApiDisp();}
+  fetchBal();
+  lg('INFO','Mode: '+m.toUpperCase(),'','');
+}
 function syncMode(){document.getElementById('hmd').className=S.mode==='demo'?'active demo':'demo';document.getElementById('hml').className=S.mode==='live'?'active live':'live';}
 
 // API PANEL
@@ -750,16 +828,23 @@ function clrLog(){document.getElementById('logent').innerHTML='';}
 
 // BOOT
 (function boot(){
+  // Restore saved mode
+  const savedMode = localStorage.getItem('zb_mode')||'demo';
+  gateMode(savedMode);
+
   const k=localStorage.getItem('zb_k')||'',s=localStorage.getItem('zb_s')||'';
-  if(k&&s){
+  if(savedMode==='live'&&k&&s){
     S.apiKey=k;S.apiSecret=s;
-    document.getElementById('g-key').value=k;document.getElementById('g-sec').value=s;
-    document.getElementById('gspin').style.display='block';document.getElementById('gstatus').textContent='Verifying saved keys…';
+    document.getElementById('g-key').value=k;
+    document.getElementById('g-sec').value=s;
+    document.getElementById('gspin').style.display='block';
+    document.getElementById('gstatus').textContent='Verifying saved keys…';
     apiGet('/api/v3/account').then(d=>{
-      if(d.balances)launch();
-      else{S.apiKey='';S.apiSecret='';localStorage.removeItem('zb_k');localStorage.removeItem('zb_s');document.getElementById('gspin').style.display='none';document.getElementById('gstatus').textContent='';gErr(d.msg||'Saved keys rejected.');}
-    }).catch(e=>{S.apiKey='';S.apiSecret='';document.getElementById('gspin').style.display='none';document.getElementById('gstatus').textContent='';gErr('Verify error: '+e.message);});
+      if(d.balances){launch();}
+      else{S.apiKey='';S.apiSecret='';localStorage.removeItem('zb_k');localStorage.removeItem('zb_s');document.getElementById('gspin').style.display='none';document.getElementById('gstatus').textContent='';gErr((d.msg||'Saved keys rejected by Binance.')+' Please re-enter.');}
+    }).catch(e=>{S.apiKey='';S.apiSecret='';document.getElementById('gspin').style.display='none';document.getElementById('gstatus').textContent='';const onHttps=location.protocol==='https:';gErr(onHttps?'Connection failed: '+e.message:'Open via HTTPS (GitHub Pages). Error: '+e.message);});
   }
+  // Demo mode: just show the gate (user clicks button to start)
 })();
 </script>
 </body>
