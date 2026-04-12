@@ -1034,111 +1034,165 @@ async function fetchBal(){
 // CHART
 function wfc(cb,n=0){if(typeof LightweightCharts!=='undefined')cb();else if(n<120)setTimeout(()=>wfc(cb,n+1),100);else document.getElementById('chart').innerHTML='<p style="padding:20px;color:#ff4520;font-family:monospace;">Chart library failed — check internet.</p>';}
 function initChart(){
-  const el=document.getElementById('chart'),area=document.getElementById('ca');
-  chart=LightweightCharts.createChart(el,{width:area.clientWidth,height:area.clientHeight,
-    layout:{background:{color:'#000408'},textColor:'#445566',fontFamily:"'JetBrains Mono',monospace"},
-    grid:{vertLines:{color:'#0c1422'},horzLines:{color:'#0c1422'}},
-    crosshair:{vertLine:{color:'rgba(0,207,255,.2)',style:1},horzLine:{color:'rgba(0,207,255,.2)',style:1}},
-    rightPriceScale:{borderColor:'#0c1422'},timeScale:{borderColor:'#0c1422',timeVisible:true,secondsVisible:false},
-    watermark:{visible:true,text:'ZB BROKER',color:'rgba(200,255,0,.018)',fontSize:52,fontFamily:"'Space Grotesk',sans-serif"}
+  var el   = document.getElementById('chart');
+  var area = document.getElementById('ca');
+  chart = LightweightCharts.createChart(el, {
+    width:  area.clientWidth,
+    height: area.clientHeight,
+    layout: { background:{color:'#000408'}, textColor:'#445566', fontFamily:"'JetBrains Mono',monospace" },
+    grid:   { vertLines:{color:'#0c1422'}, horzLines:{color:'#0c1422'} },
+    crosshair: { vertLine:{color:'rgba(0,207,255,.2)',style:1}, horzLine:{color:'rgba(0,207,255,.2)',style:1} },
+    rightPriceScale: { borderColor:'#0c1422' },
+    timeScale: { borderColor:'#0c1422', timeVisible:true, secondsVisible:false },
+    watermark: { visible:true, text:'ZB BROKER', color:'rgba(200,255,0,.018)', fontSize:52, fontFamily:"'Space Grotesk',sans-serif" }
   });
-  series=chart.addCandlestickSeries({upColor:'#c8ff00',downColor:'#ff4520',borderUpColor:'#c8ff00',borderDownColor:'#ff4520',wickUpColor:'#a8d900',wickDownColor:'#cc3010'});
-  new ResizeObserver(()=>chart.applyOptions({width:area.clientWidth,height:area.clientHeight})).observe(area);
-}
-async function loadK(){
-  // ms per candle for each timeframe
-  const msPerTf = {
-    '1m':60000,'3m':180000,'5m':300000,'15m':900000,
-    '30m':1800000,'1h':3600000,'4h':14400000,'1d':86400000
-  };
-  // Target candles per timeframe — how much history to show
-  const targetCandles = {
-    '1m': 5000,   // ~3.5 days
-    '3m': 5000,   // ~10 days
-    '5m': 5000,   // ~17 days
-    '15m':4000,   // ~41 days
-    '30m':4000,   // ~83 days
-    '1h': 5000,   // ~208 days (~7 months)
-    '4h': 5000,   // ~833 days (~2.3 years)
-    '1d': 2000,   // ~5.5 years
-  };
-
-  const total   = targetCandles[S.tf] || 3000;
-  const msStep  = msPerTf[S.tf] || 300000;
-  const base    = 'https://api.binance.com/api/v3/klines';
-  const pages   = Math.ceil(total / 1000);
-  const now     = Date.now();
-
-  // Show loading indicator in log
-  lg('INFO', 'Loading chart…', S.sym + ' ' + S.tf, pages + ' requests');
-
-  try {
-    // Build all page requests UP FRONT with pre-calculated time windows
-    // Each page covers 1000 candles worth of time, going backwards from now
-    // Fetch ALL pages in PARALLEL with Promise.all — much faster than sequential
-    const requests = [];
-    for (var pg = 0; pg < pages; pg++) {
-      // endTime for this page (most recent page has no endTime — use startTime instead)
-      var pageEndMs   = now - (pg * 1000 * msStep);
-      var pageStartMs = pageEndMs - (1000 * msStep);
-      var url = base + '?symbol=' + S.sym + '&interval=' + S.tf + '&limit=1000' +
-                '&startTime=' + Math.floor(pageStartMs) +
-                '&endTime='   + Math.floor(pageEndMs);
-      requests.push(fetch(url));
+  series = chart.addCandlestickSeries({
+    upColor:'#c8ff00', downColor:'#ff4520',
+    borderUpColor:'#c8ff00', borderDownColor:'#ff4520',
+    wickUpColor:'#a8d900', wickDownColor:'#cc3010'
+  });
+  // ── Infinite scroll: load more history when user reaches left edge ──────────
+  chart.timeScale().subscribeVisibleLogicalRangeChange(function(range) {
+    if (!range) return;
+    // When user scrolls so that the left edge visible bar index < 50, load more
+    if (range.from < 50) {
+      loadMoreHistory();
     }
+  });
+  new ResizeObserver(function() {
+    chart.applyOptions({ width: area.clientWidth, height: area.clientHeight });
+  }).observe(area);
+}
+// ── CANDLE HISTORY STATE ─────────────────────────────────────────────────────
+var CH = {
+  bars:       {},    // sym+tf -> sorted array of {time,open,high,low,close}
+  oldestMs:   {},    // sym+tf -> oldest loaded open-time in ms
+  loading:    false, // prevent concurrent fetches
+  reachedEnd: {},    // sym+tf -> true when Binance returns 0 candles (hit genesis)
+};
 
-    // Also fetch the very latest candles (no time filter) to ensure we have current data
-    requests.push(fetch(base + '?symbol=' + S.sym + '&interval=' + S.tf + '&limit=1000'));
+function chKey() { return S.sym + '_' + S.tf; }
 
-    // Wait for all requests simultaneously
-    const responses = await Promise.all(requests);
+// ── Parse raw Binance kline array into bar objects ────────────────────────────
+function parseBars(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw.map(function(k) {
+    return { time: Math.floor(k[0]/1000), ms: +k[0], open:+k[1], high:+k[2], low:+k[3], close:+k[4] };
+  });
+}
 
-    // Parse all responses in parallel too
-    const allJsons = await Promise.all(responses.map(function(r) {
-      if (!r.ok) return [];
-      return r.json().catch(function() { return []; });
-    }));
+// ── Merge new bars into existing cache, dedup, sort ───────────────────────────
+function mergeBars(key, newBars) {
+  var existing = CH.bars[key] || [];
+  var all = existing.concat(newBars);
+  var seen = {};
+  var clean = [];
+  all.forEach(function(b) { if (!seen[b.time]) { seen[b.time] = true; clean.push(b); } });
+  clean.sort(function(a, b) { return a.time - b.time; });
+  CH.bars[key] = clean;
+  // Track oldest ms
+  if (clean.length > 0) {
+    var oldestMs = clean[0].ms || (clean[0].time * 1000);
+    if (!CH.oldestMs[key] || oldestMs < CH.oldestMs[key]) {
+      CH.oldestMs[key] = oldestMs;
+    }
+  }
+  return clean;
+}
 
-    // Flatten all results into one array
-    var allBars = [];
-    allJsons.forEach(function(data) {
-      if (!Array.isArray(data)) return;
-      data.forEach(function(k) {
-        allBars.push({
-          time:  Math.floor(k[0] / 1000),
-          open:  +k[1],
-          high:  +k[2],
-          low:   +k[3],
-          close: +k[4],
-        });
-      });
-    });
+// ── Apply bars to chart and redraw price lines ────────────────────────────────
+function applyBarsToChart(bars) {
+  var chartBars = bars.map(function(b) {
+    return { time: b.time, open: b.open, high: b.high, low: b.low, close: b.close };
+  });
+  series.setData(chartBars);
+  redrawAllLines();
+}
 
-    if (allBars.length === 0) throw new Error('No candle data returned');
+// ── Initial load: fetch last 1500 candles, then auto-extend backwards ─────────
+async function loadK() {
+  var key = chKey();
+  // Reset cache for this sym+tf when switching
+  CH.bars[key]       = [];
+  CH.oldestMs[key]   = null;
+  CH.reachedEnd[key] = false;
+  CH.loading         = false;
 
-    // Deduplicate by timestamp and sort ascending
-    var seen = {};
-    var clean = [];
-    allBars.forEach(function(b) {
-      if (!seen[b.time]) { seen[b.time] = true; clean.push(b); }
-    });
-    clean.sort(function(a, b) { return a.time - b.time; });
-
-    series.setData(clean);
-    redrawAllLines();
-
-    lg('INFO', 'Chart loaded', clean.length + ' candles', S.sym + ' ' + S.tf);
+  var url = 'https://api.binance.com/api/v3/klines?symbol=' + S.sym +
+            '&interval=' + S.tf + '&limit=1000';
+  try {
+    var r = await fetch(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var raw = await r.json();
+    if (!Array.isArray(raw) || raw.length === 0) throw new Error('No data');
+    var bars = parseBars(raw);
+    var merged = mergeBars(key, bars);
+    applyBarsToChart(merged);
+    lg('INFO', 'Chart loaded', merged.length + ' candles — scroll left for more', S.sym + ' ' + S.tf);
+    // Immediately pre-load 2 more pages so there is plenty to scroll into
+    await loadMoreHistory();
+    await loadMoreHistory();
   } catch(e) {
     lg('WARN', 'Chart load failed: ' + e.message, '', '');
   }
 }
 
-// Redraw all currently active price lines after chart data reload.
-// setData() internally destroys all price lines — this restores them.
+// ── Load more history — called when user scrolls to left edge ─────────────────
+// Fetches 1000 more candles before the oldest one we have, in batches of 5 pages
+async function loadMoreHistory() {
+  var key = chKey();
+  if (CH.loading) return;
+  if (CH.reachedEnd[key]) return;
+
+  CH.loading = true;
+
+  var msPerTf = {
+    '1m':60000,'3m':180000,'5m':300000,'15m':900000,
+    '30m':1800000,'1h':3600000,'4h':14400000,'1d':86400000,'1w':604800000
+  };
+  var ms     = msPerTf[S.tf] || 300000;
+  var oldMs  = CH.oldestMs[key] || Date.now();
+
+  // Fetch 3 pages (3000 candles) backwards in parallel
+  var PAGES  = 3;
+  var reqs   = [];
+  for (var i = 0; i < PAGES; i++) {
+    var endMs   = oldMs - (i * 1000 * ms);
+    var startMs = endMs - (1000 * ms);
+    if (startMs < 0) startMs = 0;
+    var url = 'https://api.binance.com/api/v3/klines?symbol=' + S.sym +
+              '&interval=' + S.tf + '&limit=1000' +
+              '&startTime=' + Math.floor(startMs) +
+              '&endTime='   + Math.floor(endMs - 1);
+    reqs.push(fetch(url).then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; }));
+  }
+
+  var results = await Promise.all(reqs);
+  var newBars = [];
+  var totalNew = 0;
+  results.forEach(function(raw) {
+    var b = parseBars(raw);
+    totalNew += b.length;
+    newBars = newBars.concat(b);
+  });
+
+  if (totalNew === 0) {
+    CH.reachedEnd[key] = true;
+    lg('INFO', 'Reached beginning of history', S.sym + ' ' + S.tf, '');
+    CH.loading = false;
+    return;
+  }
+
+  var merged = mergeBars(key, newBars);
+  applyBarsToChart(merged);
+
+  lg('INFO', 'History extended', merged.length + ' total candles', S.sym + ' ' + S.tf);
+  CH.loading = false;
+}
+
+// ── Redraw price lines after setData() wipes them ────────────────────────────
 function redrawAllLines() {
-  // Clear stale clines references first
   ['buy','pass','sell1','sell2'].forEach(function(k) { clines[k] = null; });
-  // Re-create lines for any that are still set in state
   if (S.buyLine   !== null) updLine('buy',   S.buyLine);
   if (S.passLine  !== null) updLine('pass',  S.passLine);
   if (S.sell1Line !== null) updLine('sell1', S.sell1Line);
