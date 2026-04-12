@@ -1046,54 +1046,90 @@ function initChart(){
   new ResizeObserver(()=>chart.applyOptions({width:area.clientWidth,height:area.clientHeight})).observe(area);
 }
 async function loadK(){
-  // How many total candles to load per timeframe
-  // Binance max per request = 1000, so we paginate for longer TFs
-  const wantCandles = {
-    '1m': 1000, '3m': 1000, '5m': 1000, '15m': 1000,
-    '30m': 1500, '1h': 2000, '4h': 3000, '1d': 1500
+  // ms per candle for each timeframe
+  const msPerTf = {
+    '1m':60000,'3m':180000,'5m':300000,'15m':900000,
+    '30m':1800000,'1h':3600000,'4h':14400000,'1d':86400000
   };
-  const total  = wantCandles[S.tf] || 1000;
-  const pages  = Math.ceil(total / 1000);
-  const base   = 'https://api.binance.com/api/v3/klines';
-  let   allBars = [];
+  // Target candles per timeframe — how much history to show
+  const targetCandles = {
+    '1m': 5000,   // ~3.5 days
+    '3m': 5000,   // ~10 days
+    '5m': 5000,   // ~17 days
+    '15m':4000,   // ~41 days
+    '30m':4000,   // ~83 days
+    '1h': 5000,   // ~208 days (~7 months)
+    '4h': 5000,   // ~833 days (~2.3 years)
+    '1d': 2000,   // ~5.5 years
+  };
+
+  const total   = targetCandles[S.tf] || 3000;
+  const msStep  = msPerTf[S.tf] || 300000;
+  const base    = 'https://api.binance.com/api/v3/klines';
+  const pages   = Math.ceil(total / 1000);
+  const now     = Date.now();
+
+  // Show loading indicator in log
+  lg('INFO', 'Loading chart…', S.sym + ' ' + S.tf, pages + ' requests');
 
   try {
-    // Page 0 = most recent 1000 candles (no endTime needed)
-    // Page 1+ = older candles, using oldest bar's time as endTime
-    for (let page = 0; page < pages; page++) {
-      let url = base + '?symbol=' + S.sym + '&interval=' + S.tf + '&limit=1000';
-      if (page > 0 && allBars.length > 0) {
-        // Go further back: use oldest candle open time as endTime
-        url += '&endTime=' + (allBars[0].rawTime - 1);
-      }
-      const r = await fetch(url);
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const data = await r.json();
-      if (!Array.isArray(data) || data.length === 0) break;
-      const bars = data.map(function(k) {
-        return { rawTime: k[0], time: Math.floor(k[0]/1000), open:+k[1], high:+k[2], low:+k[3], close:+k[4] };
-      });
-      // Prepend older bars to front
-      allBars = bars.concat(allBars);
-      if (data.length < 1000) break; // no more data
+    // Build all page requests UP FRONT with pre-calculated time windows
+    // Each page covers 1000 candles worth of time, going backwards from now
+    // Fetch ALL pages in PARALLEL with Promise.all — much faster than sequential
+    const requests = [];
+    for (var pg = 0; pg < pages; pg++) {
+      // endTime for this page (most recent page has no endTime — use startTime instead)
+      var pageEndMs   = now - (pg * 1000 * msStep);
+      var pageStartMs = pageEndMs - (1000 * msStep);
+      var url = base + '?symbol=' + S.sym + '&interval=' + S.tf + '&limit=1000' +
+                '&startTime=' + Math.floor(pageStartMs) +
+                '&endTime='   + Math.floor(pageEndMs);
+      requests.push(fetch(url));
     }
 
-    // Deduplicate by time and sort ascending
-    const seen = new Set();
-    const clean = allBars
-      .filter(function(b) { if (seen.has(b.time)) return false; seen.add(b.time); return true; })
-      .sort(function(a, b) { return a.time - b.time })
-      .map(function(b) { return { time:b.time, open:b.open, high:b.high, low:b.low, close:b.close }; });
+    // Also fetch the very latest candles (no time filter) to ensure we have current data
+    requests.push(fetch(base + '?symbol=' + S.sym + '&interval=' + S.tf + '&limit=1000'));
+
+    // Wait for all requests simultaneously
+    const responses = await Promise.all(requests);
+
+    // Parse all responses in parallel too
+    const allJsons = await Promise.all(responses.map(function(r) {
+      if (!r.ok) return [];
+      return r.json().catch(function() { return []; });
+    }));
+
+    // Flatten all results into one array
+    var allBars = [];
+    allJsons.forEach(function(data) {
+      if (!Array.isArray(data)) return;
+      data.forEach(function(k) {
+        allBars.push({
+          time:  Math.floor(k[0] / 1000),
+          open:  +k[1],
+          high:  +k[2],
+          low:   +k[3],
+          close: +k[4],
+        });
+      });
+    });
+
+    if (allBars.length === 0) throw new Error('No candle data returned');
+
+    // Deduplicate by timestamp and sort ascending
+    var seen = {};
+    var clean = [];
+    allBars.forEach(function(b) {
+      if (!seen[b.time]) { seen[b.time] = true; clean.push(b); }
+    });
+    clean.sort(function(a, b) { return a.time - b.time; });
 
     series.setData(clean);
-
-    // IMPORTANT: after setData(), all chart price lines are wiped internally.
-    // Redraw any active lines so clines[] stays in sync.
     redrawAllLines();
 
     lg('INFO', 'Chart loaded', clean.length + ' candles', S.sym + ' ' + S.tf);
   } catch(e) {
-    lg('WARN', 'Failed to load klines: ' + e.message, '', '');
+    lg('WARN', 'Chart load failed: ' + e.message, '', '');
   }
 }
 
