@@ -100,14 +100,95 @@ input,select,button{font-family:inherit;font-size:12px;}
 }
 .tb-sym-picker{
   display:flex;align-items:center;gap:6px;
-  padding-right:16px;border-right:var(--bdr);height:100%;
+  padding-right:0;border-right:none;height:100%;
+  position:relative;
 }
-.tb-sym-picker select{
-  background:transparent;border:none;color:var(--t0);
-  font-family:var(--mono);font-size:14px;font-weight:700;
-  outline:none;cursor:pointer;
+/* Symbol button that opens search */
+#sym-btn{
+  display:flex;align-items:center;gap:7px;
+  padding:0 14px;height:100%;border-right:var(--bdr);
+  background:transparent;border-top:none;border-bottom:none;border-left:none;
+  cursor:pointer;transition:background .15s;
 }
-.tb-sym-picker select option{background:var(--ink2);}
+#sym-btn:hover{background:var(--ink3);}
+#sym-btn .sym-name{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--t0);}
+#sym-btn .sym-arrow{font-size:10px;color:var(--t2);}
+
+/* Search dropdown overlay */
+#sym-dropdown{
+  position:fixed;top:48px;left:0;width:360px;
+  background:var(--ink1);border:1px solid var(--ink4);
+  border-top:none;border-radius:0 0 8px 8px;
+  z-index:2000;display:none;flex-direction:column;
+  box-shadow:0 16px 48px rgba(0,0,0,.7);
+}
+#sym-dropdown.open{display:flex;}
+
+/* Search input row */
+.sym-search-row{
+  padding:10px 12px;border-bottom:1px solid var(--ink3);
+  display:flex;align-items:center;gap:8px;flex-shrink:0;
+}
+.sym-search-icon{font-size:13px;color:var(--t2);}
+#sym-search-inp{
+  flex:1;background:transparent;border:none;
+  color:var(--t0);font-family:var(--mono);font-size:13px;
+  outline:none;
+}
+#sym-search-inp::placeholder{color:var(--t3);}
+#sym-search-clear{
+  background:none;border:none;color:var(--t2);cursor:pointer;
+  font-size:14px;padding:0;line-height:1;display:none;
+}
+#sym-search-clear.vis{display:block;}
+#sym-search-clear:hover{color:var(--t0);}
+
+/* Quote filter tabs */
+.sym-tabs{
+  display:flex;border-bottom:1px solid var(--ink3);flex-shrink:0;
+  padding:0 12px;gap:0;
+}
+.sym-tab{
+  padding:7px 12px;font-size:11px;font-weight:600;
+  letter-spacing:.06em;color:var(--t2);cursor:pointer;
+  border-bottom:2px solid transparent;transition:.15s;
+  text-transform:uppercase;
+}
+.sym-tab.active{color:var(--acid);border-bottom-color:var(--acid);}
+.sym-tab:hover:not(.active){color:var(--t0);}
+
+/* Results list */
+#sym-results{
+  overflow-y:auto;flex:1;max-height:380px;
+}
+.sym-row{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;cursor:pointer;transition:background .1s;
+  border-bottom:1px solid rgba(255,255,255,.025);
+}
+.sym-row:hover{background:var(--ink3);}
+.sym-row.active-pair{background:rgba(200,255,0,.07);}
+.sym-star{
+  font-size:12px;color:var(--t3);cursor:pointer;
+  flex-shrink:0;transition:color .15s;padding:2px 4px;
+  line-height:1;background:none;border:none;
+}
+.sym-star.fav{color:var(--gold);}
+.sym-base{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--t0);flex:1;}
+.sym-quote{font-size:10px;color:var(--t2);flex-shrink:0;}
+.sym-price{font-family:var(--mono);font-size:11px;color:var(--t0);flex-shrink:0;min-width:90px;text-align:right;}
+.sym-chg{font-family:var(--mono);font-size:11px;flex-shrink:0;min-width:60px;text-align:right;}
+.sym-chg.up{color:var(--acid);}
+.sym-chg.dn{color:var(--fire);}
+.sym-hdr{
+  display:flex;gap:8px;padding:5px 12px;
+  border-bottom:1px solid var(--ink3);flex-shrink:0;
+}
+.sym-hdr span{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--t2);text-transform:uppercase;}
+.sym-hdr .sh-name{flex:1;}
+.sym-hdr .sh-price{min-width:90px;text-align:right;}
+.sym-hdr .sh-chg{min-width:60px;text-align:right;}
+.sym-empty{padding:24px 12px;text-align:center;font-size:11px;color:var(--t3);font-family:var(--mono);}
 .tb-tf-picker{
   display:flex;align-items:center;gap:4px;
   padding:0 14px;border-right:var(--bdr);height:100%;
@@ -528,12 +609,37 @@ input,select,button{font-family:inherit;font-size:12px;}
 
     <div class="tb-center">
       <div class="tb-sym-picker">
-        <select id="sym" onchange="chSym()">
-          <option>BTCUSDT</option><option>ETHUSDT</option><option>BNBUSDT</option>
-          <option>SOLUSDT</option><option>XRPUSDT</option><option>ADAUSDT</option>
-          <option>DOTUSDT</option><option>LINKUSDT</option><option>AVAXUSDT</option>
-          <option>MATICUSDT</option><option>DOGEUSDT</option><option>LTCUSDT</option>
-        </select>
+        <!-- Symbol display button -->
+        <button id="sym-btn" onclick="toggleSymSearch()">
+          <span class="sym-name" id="sym-display">BTCUSDT</span>
+          <span class="sym-arrow">▼</span>
+        </button>
+
+        <!-- Full search dropdown -->
+        <div id="sym-dropdown">
+          <!-- Search input -->
+          <div class="sym-search-row">
+            <span class="sym-search-icon">🔍</span>
+            <input id="sym-search-inp" type="text" placeholder="Search coin / pair…"
+              oninput="onSymSearch()" autocomplete="off" spellcheck="false">
+            <button id="sym-search-clear" onclick="clearSymSearch()">✕</button>
+          </div>
+          <!-- Quote tabs -->
+          <div class="sym-tabs">
+            <div class="sym-tab active" id="tab-fav"   onclick="setSymTab('fav')">★ Favs</div>
+            <div class="sym-tab"        id="tab-usdt"  onclick="setSymTab('usdt')">USDT</div>
+            <div class="sym-tab"        id="tab-btc"   onclick="setSymTab('btc')">BTC</div>
+            <div class="sym-tab"        id="tab-all"   onclick="setSymTab('all')">All</div>
+          </div>
+          <!-- Column headers -->
+          <div class="sym-hdr">
+            <span class="sh-name">Pair</span>
+            <span class="sh-price">Price</span>
+            <span class="sh-chg">24h %</span>
+          </div>
+          <!-- Results -->
+          <div id="sym-results"></div>
+        </div>
       </div>
       <div class="tb-tf-picker">
         <span>TF</span>
@@ -1397,9 +1503,175 @@ function updStats(){
 function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 
 // SYM / TF / MODE
-function chSym(){
-  S.sym = document.getElementById('sym').value;
-  const cl = S.sym.replace('USDT','');
+// ═══════════════════════════════════════════════════
+//  COIN SEARCH — Binance-style pair picker
+// ═══════════════════════════════════════════════════
+
+const SS = {
+  tab: 'usdt',         // active quote tab
+  query: '',           // current search string
+  tickers: [],         // all ticker data from Binance
+  favs: new Set(JSON.parse(localStorage.getItem('zb_favs') || '["BTCUSDT","ETHUSDT","BNBUSDT"]')),
+  tickerTimer: null,
+  open: false,
+};
+
+function toggleSymSearch() {
+  SS.open ? closeSymSearch() : openSymSearch();
+}
+
+function openSymSearch() {
+  SS.open = true;
+  document.getElementById('sym-dropdown').classList.add('open');
+  document.getElementById('sym-search-inp').focus();
+  // Load tickers if not loaded yet
+  if (SS.tickers.length === 0) fetchTickers();
+  // Default to favs tab if we have favs, else usdt
+  setSymTab(SS.favs.size > 0 ? 'fav' : 'usdt');
+  // Close when clicking outside
+  setTimeout(() => document.addEventListener('click', symOutsideClick), 0);
+}
+
+function closeSymSearch() {
+  SS.open = false;
+  document.getElementById('sym-dropdown').classList.remove('open');
+  document.removeEventListener('click', symOutsideClick);
+}
+
+function symOutsideClick(e) {
+  const drop = document.getElementById('sym-dropdown');
+  const btn  = document.getElementById('sym-btn');
+  if (!drop.contains(e.target) && !btn.contains(e.target)) closeSymSearch();
+}
+
+// Fetch all USDT tickers from Binance 24hr stats
+async function fetchTickers() {
+  try {
+    const r = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+    const data = await r.json();
+    SS.tickers = data
+      .filter(t => t.symbol.endsWith('USDT') || t.symbol.endsWith('BTC') || t.symbol.endsWith('ETH') || t.symbol.endsWith('BNB'))
+      .map(t => ({
+        sym:   t.symbol,
+        base:  t.symbol.replace(/(USDT|BTC|ETH|BNB)$/, ''),
+        quote: t.symbol.match(/(USDT|BTC|ETH|BNB)$/)?.[0] || '',
+        price: parseFloat(t.lastPrice),
+        chg:   parseFloat(t.priceChangePercent),
+        vol:   parseFloat(t.quoteVolume),
+      }))
+      .sort((a, b) => b.vol - a.vol); // sort by volume desc
+    renderResults();
+  } catch(e) {
+    document.getElementById('sym-results').innerHTML =
+      '<div class="sym-empty">Failed to load pairs. Check internet.</div>';
+  }
+  // Refresh tickers every 30 seconds while dropdown is open
+  if (SS.tickerTimer) clearInterval(SS.tickerTimer);
+  SS.tickerTimer = setInterval(() => {
+    if (SS.open) fetchTickers();
+  }, 30000);
+}
+
+function setSymTab(tab) {
+  SS.tab = tab;
+  ['fav','usdt','btc','all'].forEach(t => {
+    document.getElementById('tab-' + t).className = 'sym-tab' + (t === tab ? ' active' : '');
+  });
+  renderResults();
+}
+
+function onSymSearch() {
+  SS.query = document.getElementById('sym-search-inp').value.trim().toUpperCase();
+  document.getElementById('sym-search-clear').className = 'sym-search-clear' + (SS.query ? ' vis' : '');
+  renderResults();
+}
+
+function clearSymSearch() {
+  document.getElementById('sym-search-inp').value = '';
+  SS.query = '';
+  document.getElementById('sym-search-clear').className = 'sym-search-clear';
+  renderResults();
+  document.getElementById('sym-search-inp').focus();
+}
+
+function renderResults() {
+  let list = SS.tickers;
+
+  // Filter by tab
+  if (SS.tab === 'fav') {
+    list = list.filter(t => SS.favs.has(t.sym));
+  } else if (SS.tab === 'usdt') {
+    list = list.filter(t => t.quote === 'USDT');
+  } else if (SS.tab === 'btc') {
+    list = list.filter(t => t.quote === 'BTC');
+  }
+  // tab 'all' = no filter
+
+  // Filter by search query
+  if (SS.query) {
+    list = list.filter(t => t.sym.includes(SS.query) || t.base.includes(SS.query));
+  }
+
+  const el = document.getElementById('sym-results');
+
+  if (list.length === 0) {
+    el.innerHTML = '<div class="sym-empty">' +
+      (SS.tab === 'fav' ? 'No favourites yet. Click ★ to add.' : 'No pairs found for "' + SS.query + '"') +
+      '</div>';
+    return;
+  }
+
+  el.innerHTML = list.slice(0, 100).map(function(t) {
+    var isFav    = SS.favs.has(t.sym);
+    var isActive = t.sym === S.sym;
+    var chgSign  = t.chg >= 0 ? '+' : '';
+    var chgCls   = t.chg >= 0 ? 'up' : 'dn';
+    var priceStr = t.price < 0.001 ? t.price.toFixed(8)
+                 : t.price < 1     ? t.price.toFixed(5)
+                 : t.price < 100   ? t.price.toFixed(4)
+                 : t.price.toFixed(2);
+    return '<div class="sym-row' + (isActive ? ' active-pair' : '') + '" onclick="selectSym(\''+t.sym+'\')">'+
+      '<button class="sym-star' + (isFav ? ' fav' : '') + '" onclick="toggleFav(event,\''+t.sym+'\')">&#9733;</button>'+
+      '<span class="sym-base">'+t.base+'<span class="sym-quote"> / '+t.quote+'</span></span>'+
+      '<span class="sym-price">'+priceStr+'</span>'+
+      '<span class="sym-chg '+chgCls+'">'+chgSign+t.chg.toFixed(2)+'%</span>'+
+    '</div>';
+  }).join('');
+}
+
+function selectSym(sym) {
+  S.sym = sym;
+  document.getElementById('sym-display').textContent = sym;
+  const cl = sym.replace(/(USDT|BTC|ETH|BNB)$/, '');
+  set('bclbl', cl); set('avbl-clbl', cl);
+  closeSymSearch();
+  connectWS(true);
+  loadK();
+  saveSettings();
+  // Add to recent favs
+  addToRecent(sym);
+}
+
+function toggleFav(e, sym) {
+  e.stopPropagation();
+  if (SS.favs.has(sym)) SS.favs.delete(sym);
+  else SS.favs.add(sym);
+  localStorage.setItem('zb_favs', JSON.stringify([...SS.favs]));
+  renderResults();
+}
+
+function addToRecent(sym) {
+  // Keep in favs tab order by usage — do NOT auto-add to favs
+  // Just re-render so active pair is highlighted
+  renderResults();
+}
+
+// Legacy chSym — kept for restoreSettings compatibility
+function chSym() {
+  // now handled by selectSym, but keep for settings restore
+  const sym = S.sym;
+  document.getElementById('sym-display').textContent = sym;
+  const cl = sym.replace(/(USDT|BTC|ETH|BNB)$/, '');
   set('bclbl', cl); set('avbl-clbl', cl);
   connectWS(true);
   loadK();
@@ -1501,11 +1773,10 @@ function restoreSettings() {
     // Symbol
     if (cfg.sym) {
       S.sym = cfg.sym;
-      const sel = document.getElementById('sym');
-      for (let i = 0; i < sel.options.length; i++) {
-        if (sel.options[i].value === cfg.sym) { sel.selectedIndex = i; break; }
-      }
-      const cl = S.sym.replace('USDT','');
+      // Update the display button
+      const dispEl = document.getElementById('sym-display');
+      if (dispEl) dispEl.textContent = cfg.sym;
+      const cl = S.sym.replace(/(USDT|BTC|ETH|BNB)$/, '');
       set('bclbl', cl); set('avbl-clbl', cl);
     }
 
