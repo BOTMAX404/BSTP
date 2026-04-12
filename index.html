@@ -989,13 +989,17 @@ function launch(){
   document.getElementById('gate').style.display='none';
   document.getElementById('app').style.display='flex';
   syncMode();updateApiDisp();
-  wfc(()=>{
+  wfc(function(){
     initChart();
-    restoreSettings();   // restore lines + inputs AFTER chart is ready so lines draw correctly
-    loadK();             // load klines for the (possibly restored) symbol+TF
-    connectWS();         // connect WS for the restored symbol
+    restoreSettings();
+    loadK();
+    connectWS();
     fetchBal();
     setInterval(fetchBal, 30000);
+    // Pre-fetch ALL Binance tickers so search is instant when opened
+    loadAllTickers();
+    // Refresh ticker list every 60 seconds
+    setInterval(function(){ if(!SS.loading) loadAllTickers(); }, 60000);
     lg('INFO','Terminal connected',S.mode.toUpperCase(),'');
   });
 }
@@ -1508,13 +1512,74 @@ function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 // ═══════════════════════════════════════════════════
 
 const SS = {
-  tab: 'usdt',         // active quote tab
-  query: '',           // current search string
-  tickers: [],         // all ticker data from Binance
+  tab: 'usdt',
+  query: '',
+  tickers: [],        // full Binance ticker list — loaded on launch
+  loaded: false,      // true once fetch completes
+  loading: false,     // true while fetching
   favs: new Set(JSON.parse(localStorage.getItem('zb_favs') || '["BTCUSDT","ETHUSDT","BNBUSDT"]')),
-  tickerTimer: null,
   open: false,
 };
+
+// ── Load ALL Binance spot tickers on terminal launch ──────────────
+// Called once from launch(), then auto-refreshed every 60s
+async function loadAllTickers() {
+  if (SS.loading) return;
+  SS.loading = true;
+  showSymLoading(true);
+  try {
+    const r = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    SS.tickers = data
+      .filter(function(t) {
+        // Include ALL tradeable spot pairs
+        return t.symbol && parseFloat(t.lastPrice) > 0;
+      })
+      .map(function(t) {
+        // Extract quote asset — try common quotes in order of length (longest first to avoid partial match)
+        var quotes = ['USDT','BUSD','FDUSD','USDC','BTC','ETH','BNB','TRX','XRP','TUSD','DAI'];
+        var quote = '';
+        var base  = t.symbol;
+        for (var i = 0; i < quotes.length; i++) {
+          if (t.symbol.endsWith(quotes[i])) {
+            quote = quotes[i];
+            base  = t.symbol.slice(0, t.symbol.length - quotes[i].length);
+            break;
+          }
+        }
+        return {
+          sym:   t.symbol,
+          base:  base,
+          quote: quote,
+          price: parseFloat(t.lastPrice),
+          chg:   parseFloat(t.priceChangePercent),
+          vol:   parseFloat(t.quoteVolume),
+        };
+      })
+      .sort(function(a, b) { return b.vol - a.vol; }); // highest volume first
+
+    SS.loaded = true;
+    if (SS.open) renderResults();
+  } catch(e) {
+    if (SS.open) {
+      document.getElementById('sym-results').innerHTML =
+        '<div class="sym-empty">&#9888; Failed to load pairs: ' + e.message + '<br>Check internet connection.</div>';
+    }
+  }
+  SS.loading = false;
+  showSymLoading(false);
+}
+
+function showSymLoading(on) {
+  var el = document.getElementById('sym-results');
+  if (!el) return;
+  if (on && !SS.loaded) {
+    el.innerHTML = '<div class="sym-empty" style="padding:30px 12px;">'+
+      '<div style="margin-bottom:8px;font-size:20px;">&#8635;</div>'+
+      'Loading all Binance pairs…</div>';
+  }
+}
 
 function toggleSymSearch() {
   SS.open ? closeSymSearch() : openSymSearch();
@@ -1524,12 +1589,17 @@ function openSymSearch() {
   SS.open = true;
   document.getElementById('sym-dropdown').classList.add('open');
   document.getElementById('sym-search-inp').focus();
-  // Load tickers if not loaded yet
-  if (SS.tickers.length === 0) fetchTickers();
-  // Default to favs tab if we have favs, else usdt
-  setSymTab(SS.favs.size > 0 ? 'fav' : 'usdt');
-  // Close when clicking outside
-  setTimeout(() => document.addEventListener('click', symOutsideClick), 0);
+  // Fetch if not yet loaded
+  if (!SS.loaded) {
+    showSymLoading(true);
+    loadAllTickers();
+  } else {
+    renderResults();
+  }
+  // Default tab
+  var activeTab = SS.query ? 'all' : (SS.favs.size > 0 ? 'fav' : 'usdt');
+  setSymTab(activeTab);
+  setTimeout(function() { document.addEventListener('click', symOutsideClick); }, 0);
 }
 
 function closeSymSearch() {
@@ -1539,42 +1609,14 @@ function closeSymSearch() {
 }
 
 function symOutsideClick(e) {
-  const drop = document.getElementById('sym-dropdown');
-  const btn  = document.getElementById('sym-btn');
+  var drop = document.getElementById('sym-dropdown');
+  var btn  = document.getElementById('sym-btn');
   if (!drop.contains(e.target) && !btn.contains(e.target)) closeSymSearch();
-}
-
-// Fetch all USDT tickers from Binance 24hr stats
-async function fetchTickers() {
-  try {
-    const r = await fetch('https://api.binance.com/api/v3/ticker/24hr');
-    const data = await r.json();
-    SS.tickers = data
-      .filter(t => t.symbol.endsWith('USDT') || t.symbol.endsWith('BTC') || t.symbol.endsWith('ETH') || t.symbol.endsWith('BNB'))
-      .map(t => ({
-        sym:   t.symbol,
-        base:  t.symbol.replace(/(USDT|BTC|ETH|BNB)$/, ''),
-        quote: t.symbol.match(/(USDT|BTC|ETH|BNB)$/)?.[0] || '',
-        price: parseFloat(t.lastPrice),
-        chg:   parseFloat(t.priceChangePercent),
-        vol:   parseFloat(t.quoteVolume),
-      }))
-      .sort((a, b) => b.vol - a.vol); // sort by volume desc
-    renderResults();
-  } catch(e) {
-    document.getElementById('sym-results').innerHTML =
-      '<div class="sym-empty">Failed to load pairs. Check internet.</div>';
-  }
-  // Refresh tickers every 30 seconds while dropdown is open
-  if (SS.tickerTimer) clearInterval(SS.tickerTimer);
-  SS.tickerTimer = setInterval(() => {
-    if (SS.open) fetchTickers();
-  }, 30000);
 }
 
 function setSymTab(tab) {
   SS.tab = tab;
-  ['fav','usdt','btc','all'].forEach(t => {
+  ['fav','usdt','btc','all'].forEach(function(t) {
     document.getElementById('tab-' + t).className = 'sym-tab' + (t === tab ? ' active' : '');
   });
   renderResults();
@@ -1582,7 +1624,16 @@ function setSymTab(tab) {
 
 function onSymSearch() {
   SS.query = document.getElementById('sym-search-inp').value.trim().toUpperCase();
-  document.getElementById('sym-search-clear').className = 'sym-search-clear' + (SS.query ? ' vis' : '');
+  var clrBtn = document.getElementById('sym-search-clear');
+  clrBtn.className = 'sym-search-clear' + (SS.query ? ' vis' : '');
+  // When searching, switch to 'all' tab so nothing is hidden by quote filter
+  if (SS.query && SS.tab !== 'all') {
+    SS.tab = SS.query ? 'all' : SS.tab;
+    ['fav','usdt','btc','all'].forEach(function(t) {
+      document.getElementById('tab-' + t).className = 'sym-tab' + (t === SS.tab ? ' active' : '');
+    });
+  }
+  if (!SS.loaded) { loadAllTickers(); return; }
   renderResults();
 }
 
@@ -1590,51 +1641,72 @@ function clearSymSearch() {
   document.getElementById('sym-search-inp').value = '';
   SS.query = '';
   document.getElementById('sym-search-clear').className = 'sym-search-clear';
-  renderResults();
+  setSymTab('usdt');
   document.getElementById('sym-search-inp').focus();
 }
 
 function renderResults() {
-  let list = SS.tickers;
+  if (!SS.loaded) { showSymLoading(true); return; }
+  var list = SS.tickers.slice(); // copy
 
-  // Filter by tab
-  if (SS.tab === 'fav') {
-    list = list.filter(t => SS.favs.has(t.sym));
-  } else if (SS.tab === 'usdt') {
-    list = list.filter(t => t.quote === 'USDT');
-  } else if (SS.tab === 'btc') {
-    list = list.filter(t => t.quote === 'BTC');
-  }
-  // tab 'all' = no filter
-
-  // Filter by search query
+  // When user is searching — ignore tab filter, search all pairs
   if (SS.query) {
-    list = list.filter(t => t.sym.includes(SS.query) || t.base.includes(SS.query));
+    list = list.filter(function(t) {
+      return t.sym.indexOf(SS.query) !== -1 ||
+             t.base.indexOf(SS.query) !== -1 ||
+             t.sym === SS.query + 'USDT' ||
+             t.sym === SS.query + 'BTC';
+    });
+    // Sort: exact base match first, then starts-with, then contains
+    list.sort(function(a, b) {
+      var qa = a.base === SS.query ? 0 : a.base.startsWith(SS.query) ? 1 : 2;
+      var qb = b.base === SS.query ? 0 : b.base.startsWith(SS.query) ? 1 : 2;
+      if (qa !== qb) return qa - qb;
+      return b.vol - a.vol; // within same priority, sort by volume
+    });
+  } else {
+    // No search — filter by tab
+    if (SS.tab === 'fav') {
+      list = list.filter(function(t) { return SS.favs.has(t.sym); });
+    } else if (SS.tab === 'usdt') {
+      list = list.filter(function(t) { return t.quote === 'USDT'; });
+    } else if (SS.tab === 'btc') {
+      list = list.filter(function(t) { return t.quote === 'BTC'; });
+    }
+    // 'all' = no filter
   }
 
-  const el = document.getElementById('sym-results');
+  var el = document.getElementById('sym-results');
 
   if (list.length === 0) {
-    el.innerHTML = '<div class="sym-empty">' +
-      (SS.tab === 'fav' ? 'No favourites yet. Click ★ to add.' : 'No pairs found for "' + SS.query + '"') +
-      '</div>';
+    var msg = SS.tab === 'fav'
+      ? 'No favourites yet.<br>Click &#9733; next to any pair to save it.'
+      : 'No pairs found for &quot;' + SS.query + '&quot;';
+    el.innerHTML = '<div class="sym-empty">' + msg + '</div>';
     return;
   }
 
-  el.innerHTML = list.slice(0, 100).map(function(t) {
+  // Show count when searching
+  var countLine = SS.query
+    ? '<div style="padding:4px 12px;font-size:10px;color:var(--t2);font-family:var(--mono);">' + list.length + ' pair' + (list.length===1?'':'s') + ' found</div>'
+    : '';
+
+  el.innerHTML = countLine + list.slice(0, 150).map(function(t) {
     var isFav    = SS.favs.has(t.sym);
     var isActive = t.sym === S.sym;
     var chgSign  = t.chg >= 0 ? '+' : '';
     var chgCls   = t.chg >= 0 ? 'up' : 'dn';
-    var priceStr = t.price < 0.001 ? t.price.toFixed(8)
-                 : t.price < 1     ? t.price.toFixed(5)
-                 : t.price < 100   ? t.price.toFixed(4)
-                 : t.price.toFixed(2);
-    return '<div class="sym-row' + (isActive ? ' active-pair' : '') + '" onclick="selectSym(\''+t.sym+'\')">'+
-      '<button class="sym-star' + (isFav ? ' fav' : '') + '" onclick="toggleFav(event,\''+t.sym+'\')">&#9733;</button>'+
-      '<span class="sym-base">'+t.base+'<span class="sym-quote"> / '+t.quote+'</span></span>'+
-      '<span class="sym-price">'+priceStr+'</span>'+
-      '<span class="sym-chg '+chgCls+'">'+chgSign+t.chg.toFixed(2)+'%</span>'+
+    var priceStr = t.price === 0    ? '—'
+                 : t.price < 0.00001 ? t.price.toFixed(8)
+                 : t.price < 0.001  ? t.price.toFixed(6)
+                 : t.price < 1      ? t.price.toFixed(4)
+                 : t.price < 1000   ? t.price.toFixed(2)
+                 : t.price.toFixed(0);
+    return '<div class="sym-row' + (isActive ? ' active-pair' : '') + '" onclick="selectSym(\'' + t.sym + '\')">'+
+      '<button class="sym-star' + (isFav ? ' fav' : '') + '" onclick="toggleFav(event,\'' + t.sym + '\')">&#9733;</button>'+
+      '<span class="sym-base">' + t.base + '<span class="sym-quote"> / ' + t.quote + '</span></span>'+
+      '<span class="sym-price">' + priceStr + '</span>'+
+      '<span class="sym-chg ' + chgCls + '">' + chgSign + t.chg.toFixed(2) + '%</span>'+
     '</div>';
   }).join('');
 }
@@ -1642,14 +1714,16 @@ function renderResults() {
 function selectSym(sym) {
   S.sym = sym;
   document.getElementById('sym-display').textContent = sym;
-  const cl = sym.replace(/(USDT|BTC|ETH|BNB)$/, '');
+  var cl = sym;
+  // Strip known quote assets
+  ['USDT','BUSD','FDUSD','USDC','BTC','ETH','BNB','TRX','XRP','TUSD','DAI'].forEach(function(q) {
+    if (sym.endsWith(q)) cl = sym.slice(0, sym.length - q.length);
+  });
   set('bclbl', cl); set('avbl-clbl', cl);
   closeSymSearch();
   connectWS(true);
   loadK();
   saveSettings();
-  // Add to recent favs
-  addToRecent(sym);
 }
 
 function toggleFav(e, sym) {
@@ -1660,13 +1734,7 @@ function toggleFav(e, sym) {
   renderResults();
 }
 
-function addToRecent(sym) {
-  // Keep in favs tab order by usage — do NOT auto-add to favs
-  // Just re-render so active pair is highlighted
-  renderResults();
-}
 
-// Legacy chSym — kept for restoreSettings compatibility
 function chSym() {
   // now handled by selectSym, but keep for settings restore
   const sym = S.sym;
