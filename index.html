@@ -1046,21 +1046,95 @@ function initChart(){
   new ResizeObserver(()=>chart.applyOptions({width:area.clientWidth,height:area.clientHeight})).observe(area);
 }
 async function loadK(){
-  try{const r=await fetch('https://api.binance.com/api/v3/klines?symbol='+S.sym+'&interval='+S.tf+'&limit=400');const d=await r.json();series.setData(d.map(k=>({time:Math.floor(k[0]/1000),open:+k[1],high:+k[2],low:+k[3],close:+k[4]})));}catch(e){lg('WARN','Failed to load klines','','');}
-}
-function updLine(k,price){
-  // Guard: chart may not be ready yet
-  if (!series) { clines[k] = null; return; }
-  if(clines[k]){try{series.removePriceLine(clines[k]);}catch(e){} clines[k]=null;}
-  if(price===null){return;}
-  const cfg={
-    buy:  {color:'#c8ff00',style:LightweightCharts.LineStyle.Solid,  title:'BUY',    lineWidth:2},
-    pass: {color:'#ffc400',style:LightweightCharts.LineStyle.Dashed,  title:'PASS',   lineWidth:1},
-    sell1:{color:'#00cfff',style:LightweightCharts.LineStyle.Dotted,  title:'1-SELL', lineWidth:2},
-    sell2:{color:'#b06eff',style:LightweightCharts.LineStyle.Solid,   title:'2-SELL', lineWidth:2},
+  // How many total candles to load per timeframe
+  // Binance max per request = 1000, so we paginate for longer TFs
+  const wantCandles = {
+    '1m': 1000, '3m': 1000, '5m': 1000, '15m': 1000,
+    '30m': 1500, '1h': 2000, '4h': 3000, '1d': 1500
   };
-  const cfg_k=cfg[k];
-  clines[k]=series.createPriceLine({price,color:cfg_k.color,lineWidth:cfg_k.lineWidth,lineStyle:cfg_k.style,axisLabelVisible:true,title:cfg_k.title});
+  const total  = wantCandles[S.tf] || 1000;
+  const pages  = Math.ceil(total / 1000);
+  const base   = 'https://api.binance.com/api/v3/klines';
+  let   allBars = [];
+
+  try {
+    // Page 0 = most recent 1000 candles (no endTime needed)
+    // Page 1+ = older candles, using oldest bar's time as endTime
+    for (let page = 0; page < pages; page++) {
+      let url = base + '?symbol=' + S.sym + '&interval=' + S.tf + '&limit=1000';
+      if (page > 0 && allBars.length > 0) {
+        // Go further back: use oldest candle open time as endTime
+        url += '&endTime=' + (allBars[0].rawTime - 1);
+      }
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const data = await r.json();
+      if (!Array.isArray(data) || data.length === 0) break;
+      const bars = data.map(function(k) {
+        return { rawTime: k[0], time: Math.floor(k[0]/1000), open:+k[1], high:+k[2], low:+k[3], close:+k[4] };
+      });
+      // Prepend older bars to front
+      allBars = bars.concat(allBars);
+      if (data.length < 1000) break; // no more data
+    }
+
+    // Deduplicate by time and sort ascending
+    const seen = new Set();
+    const clean = allBars
+      .filter(function(b) { if (seen.has(b.time)) return false; seen.add(b.time); return true; })
+      .sort(function(a, b) { return a.time - b.time })
+      .map(function(b) { return { time:b.time, open:b.open, high:b.high, low:b.low, close:b.close }; });
+
+    series.setData(clean);
+
+    // IMPORTANT: after setData(), all chart price lines are wiped internally.
+    // Redraw any active lines so clines[] stays in sync.
+    redrawAllLines();
+
+    lg('INFO', 'Chart loaded', clean.length + ' candles', S.sym + ' ' + S.tf);
+  } catch(e) {
+    lg('WARN', 'Failed to load klines: ' + e.message, '', '');
+  }
+}
+
+// Redraw all currently active price lines after chart data reload.
+// setData() internally destroys all price lines — this restores them.
+function redrawAllLines() {
+  // Clear stale clines references first
+  ['buy','pass','sell1','sell2'].forEach(function(k) { clines[k] = null; });
+  // Re-create lines for any that are still set in state
+  if (S.buyLine   !== null) updLine('buy',   S.buyLine);
+  if (S.passLine  !== null) updLine('pass',  S.passLine);
+  if (S.sell1Line !== null) updLine('sell1', S.sell1Line);
+  if (S.sell2Line !== null) updLine('sell2', S.sell2Line);
+}
+function updLine(k, price){
+  if (!series) { clines[k] = null; return; }
+  // Always try to remove any existing price line for this key
+  if (clines[k]) {
+    try { series.removePriceLine(clines[k]); } catch(e) {}
+    clines[k] = null;
+  }
+  if (price === null || price === undefined) return;
+  const cfgMap = {
+    buy:  { color:'#c8ff00', style:LightweightCharts.LineStyle.Solid,  title:'BUY',    lineWidth:2 },
+    pass: { color:'#ffc400', style:LightweightCharts.LineStyle.Dashed,  title:'PASS',   lineWidth:1 },
+    sell1:{ color:'#00cfff', style:LightweightCharts.LineStyle.Dotted,  title:'1-SELL', lineWidth:2 },
+    sell2:{ color:'#b06eff', style:LightweightCharts.LineStyle.Solid,   title:'2-SELL', lineWidth:2 },
+  };
+  try {
+    const cf = cfgMap[k];
+    clines[k] = series.createPriceLine({
+      price:            price,
+      color:            cf.color,
+      lineWidth:        cf.lineWidth,
+      lineStyle:        cf.style,
+      axisLabelVisible: true,
+      title:            cf.title,
+    });
+  } catch(e) {
+    clines[k] = null;
+  }
 }
 
 // WEBSOCKET
@@ -1332,17 +1406,35 @@ function clPos(p, triggeredLine) {
   ['pentry','pqty','pval','ppnl','ppct'].forEach(id => set(id, '—'));
   updStats();
   // ── Remove lines that have done their job ──────────────────
-  // Pass line: only remove if it was actually set (it's a one-per-trade gate)
-  // Note: S.passLine is still set here (we only clear S.passZone flag above)
-  // We must check the original line value before calling removeLine
-  if (S.passLine !== null) {
-    removeLine('pass');
-  }
-  // Remove whichever sell line triggered the exit
+  // Pass line is a one-per-trade gate — always remove after close
+  removeLine('pass');
+  // Remove the sell line that triggered (sell1 or sell2)
   if (triggeredLine) {
     removeLine(triggeredLine);
-    lg('INFO', triggeredLine.toUpperCase() + ' line triggered — removed from chart', '', '');
   }
+  // Belt-and-suspenders: if sell2 triggered, make absolutely sure it's gone
+  if (triggeredLine === 'sell2') {
+    S.sell2Line = null;
+    if (series && clines['sell2']) {
+      try { series.removePriceLine(clines['sell2']); } catch(e) {}
+      clines['sell2'] = null;
+    }
+    var s2el = document.getElementById('s2p');
+    if (s2el) s2el.value = '';
+  }
+  // Similarly for sell1
+  if (triggeredLine === 'sell1') {
+    S.sell1Line = null;
+    if (series && clines['sell1']) {
+      try { series.removePriceLine(clines['sell1']); } catch(e) {}
+      clines['sell1'] = null;
+    }
+    var s1el = document.getElementById('s1p');
+    if (s1el) s1el.value = '';
+  }
+  updLS();
+  saveSettings();
+  lg('INFO', 'Position closed — lines cleaned up', '', '');
 }
 
 // ── 1ST SELL TRAILING TIMER ──────────────────────────────────
@@ -1427,16 +1519,22 @@ const linpMap={buy:'buyp',pass:'passp',sell1:'s1p',sell2:'s2p'};
 // Remove a line completely from chart, state, UI and input field
 // Called automatically when a line finishes its job
 function removeLine(k) {
-  if (!k || S[k + 'Line'] === null) return; // already gone
+  if (!k) return;
+  // Always clear state regardless of current value
   S[k + 'Line'] = null;
-  // Remove from chart using the same updLine path for consistency
-  updLine(k, null);
+  // Remove from chart — try both the cached reference AND a direct series call
+  if (series && clines[k]) {
+    try { series.removePriceLine(clines[k]); } catch(e) {}
+    clines[k] = null;
+  }
+  // Belt-and-suspenders: if updLine still has something, clear it
+  clines[k] = null;
   // Clear the input field
-  const inpId = linpMap[k];
-  if (inpId) { const el = document.getElementById(inpId); if (el) el.value = ''; }
-  // Update sidebar status dots and badges
+  var inpId = linpMap[k];
+  if (inpId) { var el = document.getElementById(inpId); if (el) el.value = ''; }
+  // Update sidebar
   updLS();
-  lg('INFO', k.toUpperCase() + ' line job done — removed', '', '');
+  lg('INFO', k.toUpperCase() + ' line removed', '', '');
   saveSettings();
 }
 function setL(k){
@@ -1888,6 +1986,8 @@ function restoreSettings() {
     if (cfg.sell2Line !== null && cfg.sell2Line !== undefined) { S.sell2Line = cfg.sell2Line; updLine('sell2', S.sell2Line); }
     updLS();
 
+    // Redraw all lines on chart (called after chart is ready)
+    redrawAllLines();
     lg('INFO', 'Settings restored from last session', cfg.sym + ' ' + cfg.tf, '');
   } catch(e) {
     console.warn('restoreSettings failed:', e);
