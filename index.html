@@ -946,18 +946,73 @@ function updLine(k,price){
 }
 
 // WEBSOCKET
-function connectWS(){
-  if(S.priceWs){S.priceWs.onclose=null;S.priceWs.close();}
-  if(S.klineWs){S.klineWs.onclose=null;S.klineWs.close();}
-  const sym=S.sym.toLowerCase(),base=WSB[S.mode];
-  S.priceWs=new WebSocket(base+sym+'@aggTrade');
-  S.priceWs.onopen=()=>setConn(true);
-  S.priceWs.onmessage=e=>{const d=JSON.parse(e.data),p=+d.p;S.prev=S.price;S.price=p;updPriceUI(p);updPosUI(p);updEstUI(p);if(S.botOn&&!S.inPos)chkBuy(p);if(S.botOn&&S.inPos)chkSell(p);};
-  S.priceWs.onerror=()=>setConn(false);
-  S.priceWs.onclose=()=>{setConn(false);setTimeout(connectWS,3000);};
-  S.klineWs=new WebSocket(base+sym+'@kline_'+S.tf);
-  S.klineWs.onmessage=e=>{const k=JSON.parse(e.data).k;series.update({time:Math.floor(k.t/1000),open:+k.o,high:+k.h,low:+k.l,close:+k.c});if(k.x&&S.botOn&&S.s2Up&&S.sell2Line!==null&&document.getElementById('s2tf').value===S.tf)s2Move();};
+// Kill a socket cleanly — null all handlers FIRST so no events fire after close
+function killWs(ws) {
+  if (!ws) return;
+  try { ws.onopen = null; ws.onmessage = null; ws.onerror = null; ws.onclose = null; ws.close(); } catch(e) {}
 }
+
+function connectWS(silent) {
+  // Kill old sockets cleanly — null handlers BEFORE close so no stale events fire
+  killWs(S.priceWs);
+  killWs(S.klineWs);
+  S.priceWs = null;
+  S.klineWs = null;
+
+  if (!silent) setConn(false); // show "Connecting…" only on true reconnect, not symbol switch
+
+  const sym = S.sym.toLowerCase();
+  const base = WSB[S.mode];
+
+  // ── Price feed (aggTrade = tick-level, instant price updates) ──
+  const pw = new WebSocket(base + sym + '@aggTrade');
+  pw.onopen = () => {
+    S.priceWs = pw; // only assign after open — prevents stale ref
+    setConn(true);
+  };
+  pw.onmessage = e => {
+    const d = JSON.parse(e.data), p = +d.p;
+    S.prev = S.price; S.price = p;
+    updPriceUI(p); updPosUI(p); updEstUI(p);
+    if (S.botOn && !S.inPos) chkBuy(p);
+    if (S.botOn && S.inPos)  chkSell(p);
+  };
+  pw.onerror = () => {
+    if (S.priceWs !== pw) return; // stale socket, ignore
+    setConn(false);
+  };
+  pw.onclose = () => {
+    if (S.priceWs !== pw) return; // intentional close, ignore
+    setConn(false);
+    S.priceWs = null;
+    setTimeout(() => connectWS(false), 3000); // auto-reconnect only on unexpected close
+  };
+
+  // ── Kline feed (candlestick updates) ──
+  const kw = new WebSocket(base + sym + '@kline_' + S.tf);
+  kw.onopen = () => { S.klineWs = kw; };
+  kw.onmessage = e => {
+    const k = JSON.parse(e.data).k;
+    series.update({ time: Math.floor(k.t / 1000), open: +k.o, high: +k.h, low: +k.l, close: +k.c });
+    if (k.x && S.botOn && S.s2Up && S.sell2Line !== null && document.getElementById('s2tf').value === S.tf) s2Move();
+  };
+  kw.onerror = () => { if (S.klineWs !== kw) return; };
+  kw.onclose = () => {
+    if (S.klineWs !== kw) return; // intentional, ignore
+    S.klineWs = null;
+    // Reconnect kline only — price WS handles its own reconnect
+    setTimeout(() => {
+      if (!S.klineWs) {
+        const kw2 = new WebSocket(WSB[S.mode] + S.sym.toLowerCase() + '@kline_' + S.tf);
+        kw2.onopen = () => { S.klineWs = kw2; };
+        kw2.onmessage = kw.onmessage;
+        kw2.onerror = () => {};
+        kw2.onclose = kw.onclose;
+      }
+    }, 3000);
+  };
+}
+
 function s2Move(){
   if (!S.botOn || S.sell2Line === null) return;
   const mv = +document.getElementById('s2mv').value || 5;
@@ -970,7 +1025,10 @@ function s2Move(){
     exSell('2ND SELL HIT AFTER AUTO-MOVE', S.price, 'sell2');
   }
 }
-function setConn(ok){document.getElementById('cdot').className='dot'+(ok?' on':' off');document.getElementById('ctxt').textContent=ok?'Connected':'Reconnecting…';}
+function setConn(ok){
+  document.getElementById('cdot').className = 'dot' + (ok ? ' on' : ' off');
+  document.getElementById('ctxt').textContent = ok ? 'Connected' : 'Connecting…';
+}
 
 // ═══════════════════════════════════════════════════════════
 //  BOT LOGIC — complete 4-line state machine
@@ -1325,10 +1383,30 @@ function updStats(){
 function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 
 // SYM / TF / MODE
-function chSym(){S.sym=document.getElementById('sym').value;const cl=S.sym.replace('USDT','');set('bclbl',cl);set('avbl-clbl',cl);loadK();connectWS();}
-function chTF(){S.tf=document.getElementById('tf').value;loadK();if(S.klineWs){S.klineWs.onclose=null;S.klineWs.close();}S.klineWs=new WebSocket(WSB[S.mode]+S.sym.toLowerCase()+'@kline_'+S.tf);S.klineWs.onmessage=e=>{const k=JSON.parse(e.data).k;series.update({time:Math.floor(k.t/1000),open:+k.o,high:+k.h,low:+k.l,close:+k.c});if(k.x&&S.botOn&&S.s2Up&&S.sell2Line!==null&&document.getElementById('s2tf').value===S.tf)s2Move();};}
+function chSym(){
+  S.sym = document.getElementById('sym').value;
+  const cl = S.sym.replace('USDT','');
+  set('bclbl', cl); set('avbl-clbl', cl);
+  // silent=true → no "Reconnecting" flash, just smoothly switch
+  connectWS(true);
+  loadK();
+}
+function chTF(){
+  S.tf = document.getElementById('tf').value;
+  killWs(S.klineWs); S.klineWs = null;
+  loadK();
+  const kw = new WebSocket(WSB[S.mode] + S.sym.toLowerCase() + '@kline_' + S.tf);
+  kw.onopen = () => { S.klineWs = kw; };
+  kw.onmessage = e => {
+    const k = JSON.parse(e.data).k;
+    series.update({ time: Math.floor(k.t/1000), open:+k.o, high:+k.h, low:+k.l, close:+k.c });
+    if (k.x && S.botOn && S.s2Up && S.sell2Line !== null && document.getElementById('s2tf').value === S.tf) s2Move();
+  };
+  kw.onerror = () => {};
+  kw.onclose = () => { if (S.klineWs !== kw) return; S.klineWs = null; };
+}
 function setMode(m){
-  S.mode=m;localStorage.setItem('zb_mode',m);syncMode();connectWS();loadK();
+  S.mode=m;localStorage.setItem('zb_mode',m);syncMode();connectWS(true);loadK();
   if(m==='demo'){S.demoUSDT=10000;S.demoCoin=0;S.apiKey='';S.apiSecret='';updateApiDisp();}
   fetchBal();lg('INFO','Mode: '+m.toUpperCase(),'','');
 }
@@ -1356,7 +1434,7 @@ function tIV(id,btn){const e=document.getElementById(id);e.type=e.type==='passwo
 async function saveInline(){const k=document.getElementById('eikey').value.trim(),s=document.getElementById('eisec').value.trim();if(!k||!s){lg('WARN','Both fields required','','');return;}S.apiKey=k;S.apiSecret=s;localStorage.setItem('zb_k',k);localStorage.setItem('zb_s',s);updateApiDisp();tEditForm();lg('INFO','API keys updated','','');fetchBal();}
 async function testApi(){const k=document.getElementById('eikey').value.trim(),s=document.getElementById('eisec').value.trim();if(!k||!s){lg('WARN','Enter keys to test','','');return;}const bk=[S.apiKey,S.apiSecret];S.apiKey=k;S.apiSecret=s;lg('INFO','Testing API…','','');try{const d=await apiGet('/api/v3/account');if(d.balances)lg('INFO','API test PASSED ✓','','');else{lg('WARN','Test failed: '+d.msg,'','');[S.apiKey,S.apiSecret]=bk;}}catch(e){lg('WARN','Test error: '+e.message,'','');[S.apiKey,S.apiSecret]=bk;}updateApiDisp();}
 function clrKeys(){if(!confirm('Clear saved API keys?'))return;S.apiKey='';S.apiSecret='';localStorage.removeItem('zb_k');localStorage.removeItem('zb_s');document.getElementById('eikey').value='';document.getElementById('eisec').value='';updateApiDisp();lg('WARN','API keys cleared','','');}
-function disc(){if(!confirm('Disconnect?'))return;if(S.botOn)togBot();if(S.priceWs){S.priceWs.onclose=null;S.priceWs.close();}if(S.klineWs){S.klineWs.onclose=null;S.klineWs.close();}document.getElementById('app').style.display='none';document.getElementById('gate').style.display='flex';document.getElementById('gerr').style.display='none';document.getElementById('gstatus').textContent='';document.getElementById('gspin').style.display='none';const btn=document.getElementById('gbtn');btn.disabled=false;document.getElementById('g-key').value=localStorage.getItem('zb_k')||'';document.getElementById('g-sec').value=localStorage.getItem('zb_s')||'';}
+function disc(){if(!confirm('Disconnect?'))return;if(S.botOn)togBot();killWs(S.priceWs);killWs(S.klineWs);S.priceWs=null;S.klineWs=null;document.getElementById('app').style.display='none';document.getElementById('gate').style.display='flex';document.getElementById('gerr').style.display='none';document.getElementById('gstatus').textContent='';document.getElementById('gspin').style.display='none';const btn=document.getElementById('gbtn');btn.disabled=false;document.getElementById('g-key').value=localStorage.getItem('zb_k')||'';document.getElementById('g-sec').value=localStorage.getItem('zb_s')||'';}
 function openMod(){document.getElementById('mkey').value=S.apiKey;document.getElementById('msec').value=S.apiSecret;document.getElementById('mbg').className='open';}
 function closeMod(){document.getElementById('mbg').className='';}
 function saveMod(){const k=document.getElementById('mkey').value.trim(),s=document.getElementById('msec').value.trim();if(!k||!s)return;S.apiKey=k;S.apiSecret=s;localStorage.setItem('zb_k',k);localStorage.setItem('zb_s',s);updateApiDisp();closeMod();lg('INFO','API keys saved','','');fetchBal();}
