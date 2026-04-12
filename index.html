@@ -672,8 +672,8 @@ input,select,button{font-family:inherit;font-size:12px;}
           <div class="rp-label">Trade Amount</div>
           <div class="bnc-inp-wrap">
             <span class="bil">Amount</span>
-            <input type="number" id="tamt" value="100" min="0" placeholder="0.00">
-            <select id="tunit" class="biu" style="padding:0 8px;background:transparent;border:none;border-left:1px solid var(--ink4);color:var(--t2);cursor:pointer;outline:none;">
+            <input type="number" id="tamt" oninput="saveSettings()" value="100" min="0" placeholder="0.00">
+            <select id="tunit" onchange="saveSettings()" class="biu" style="padding:0 8px;background:transparent;border:none;border-left:1px solid var(--ink4);color:var(--t2);cursor:pointer;outline:none;">
               <option value="usdt">USDT</option>
               <option value="coin">Coin</option>
             </select>
@@ -696,7 +696,7 @@ input,select,button{font-family:inherit;font-size:12px;}
             <div class="line-badge" id="bbadge">Off</div>
           </div>
           <div class="line-set-row">
-            <input class="ls-inp" id="buyp" type="number" placeholder="Buy price…" step="0.01">
+            <input class="ls-inp" id="buyp" oninput="saveSettings()" type="number" placeholder="Buy price…" step="0.01">
             <button class="ls-btn buy" onclick="setL('buy')">Set</button>
             <button class="ls-btn ghost" onclick="useC('buy')" title="Use current price">≈</button>
             <button class="ls-btn ghost" onclick="clrL('buy')">✕</button>
@@ -711,7 +711,7 @@ input,select,button{font-family:inherit;font-size:12px;}
             <div class="line-badge" id="pbadge">Off</div>
           </div>
           <div class="line-set-row">
-            <input class="ls-inp" id="passp" type="number" placeholder="Pass price…" step="0.01">
+            <input class="ls-inp" id="passp" oninput="saveSettings()" type="number" placeholder="Pass price…" step="0.01">
             <button class="ls-btn pass" onclick="setL('pass')">Set</button>
             <button class="ls-btn ghost" onclick="useC('pass')" title="Use current price">≈</button>
             <button class="ls-btn ghost" onclick="clrL('pass')">✕</button>
@@ -727,21 +727,21 @@ input,select,button{font-family:inherit;font-size:12px;}
             <div class="line-badge" id="s1badge">Off</div>
           </div>
           <div class="line-set-row">
-            <input class="ls-inp" id="s1p" type="number" placeholder="1st sell price…" step="0.01">
+            <input class="ls-inp" id="s1p" oninput="saveSettings()" type="number" placeholder="1st sell price…" step="0.01">
             <button class="ls-btn s1" onclick="setL('sell1')">Set</button>
             <button class="ls-btn ghost" onclick="useC('sell1')" title="Use current price">≈</button>
             <button class="ls-btn ghost" onclick="clrL('sell1')">✕</button>
           </div>
           <div class="sub-row">
             <span class="sl">Trail every</span>
-            <input class="sub-inp" id="s1intv" type="number" value="5" min="1">
-            <select class="sub-sel" id="s1unit">
+            <input class="sub-inp" id="s1intv" oninput="saveSettings()" type="number" value="5" min="1">
+            <select class="sub-sel" id="s1unit" onchange="saveSettings()">
               <option value="60">min</option>
               <option value="3600">hr</option>
               <option value="1">sec</option>
             </select>
             <span class="sl">up $</span>
-            <input class="sub-inp" id="s1mv" type="number" value="5" min="0.01">
+            <input class="sub-inp" id="s1mv" oninput="saveSettings()" type="number" value="5" min="0.01">
           </div>
           <div class="trail-lbl" id="s1trail">Trail: inactive</div>
         </div>
@@ -754,7 +754,7 @@ input,select,button{font-family:inherit;font-size:12px;}
             <div class="line-badge" id="s2badge">Off</div>
           </div>
           <div class="line-set-row">
-            <input class="ls-inp" id="s2p" type="number" placeholder="2nd sell price…" step="0.01">
+            <input class="ls-inp" id="s2p" oninput="saveSettings()" type="number" placeholder="2nd sell price…" step="0.01">
             <button class="ls-btn s2" onclick="setL('sell2')">Set</button>
             <button class="ls-btn ghost" onclick="useC('sell2')" title="Use current price">≈</button>
             <button class="ls-btn ghost" onclick="clrL('sell2')">✕</button>
@@ -766,9 +766,9 @@ input,select,button{font-family:inherit;font-size:12px;}
           <div id="s2auto" style="display:none;">
             <div class="sub-row">
               <span class="sl">Move up $</span>
-              <input class="sub-inp" id="s2mv" type="number" value="5" min="0.01" style="width:64px;">
+              <input class="sub-inp" id="s2mv" oninput="saveSettings()" type="number" value="5" min="0.01" style="width:64px;">
               <span class="sl">TF</span>
-              <select class="sub-sel" id="s2tf">
+              <select class="sub-sel" id="s2tf" onchange="saveSettings()">
                 <option value="1m">1m</option><option value="3m">3m</option>
                 <option value="5m" selected>5m</option><option value="15m">15m</option>
                 <option value="30m">30m</option><option value="1h">1h</option>
@@ -883,7 +883,15 @@ function launch(){
   document.getElementById('gate').style.display='none';
   document.getElementById('app').style.display='flex';
   syncMode();updateApiDisp();
-  wfc(()=>{initChart();loadK();connectWS();fetchBal();setInterval(fetchBal,30000);lg('INFO','Terminal connected',S.mode.toUpperCase(),'');});
+  wfc(()=>{
+    initChart();
+    restoreSettings();   // restore lines + inputs AFTER chart is ready so lines draw correctly
+    loadK();             // load klines for the (possibly restored) symbol+TF
+    connectWS();         // connect WS for the restored symbol
+    fetchBal();
+    setInterval(fetchBal, 30000);
+    lg('INFO','Terminal connected',S.mode.toUpperCase(),'');
+  });
 }
 
 // HMAC + API
@@ -1319,6 +1327,7 @@ function removeLine(k) {
   // Update sidebar status dots and badges
   updLS();
   lg('INFO', k.toUpperCase() + ' line job done — removed', '', '');
+  saveSettings();
 }
 function setL(k){
   const v=+document.getElementById(linpMap[k]).value;
@@ -1326,16 +1335,16 @@ function setL(k){
   S[k+'Line']=v;
   updLine(k,v);updLS();
   lg('INFO',k.toUpperCase()+' line SET','$'+v.toFixed(2),'Bot is '+(S.botOn?'RUNNING — line active now':'stopped'));
-  // Update bot phase to show active lines
   if(S.botOn&&!S.inPos&&k==='buy') botPhase('Watching buy line @ $'+v.toFixed(2));
-  // Restart S1 trail if sell1 was just updated while in position
   if(S.inPos&&k==='sell1') startS1();
+  saveSettings();
 }
 function clrL(k){
   S[k+'Line']=null;
   updLine(k,null);updLS();
   lg('INFO',k.toUpperCase()+' line CLEARED','','');
   if(k==='sell1')stopS1();
+  saveSettings();
 }
 function useC(k){if(!S.price)return;document.getElementById(linpMap[k]).value=S.price.toFixed(2);}
 function updLS(){
@@ -1346,7 +1355,12 @@ function updLS(){
     else{de.className='ldot '+c;ve.textContent='Not set';ve.className='lsv ns';be.textContent='Off';be.className='line-badge';}
   });
 }
-function togS2(){S.s2Up=!S.s2Up;document.getElementById('s2cb').className='cbbox'+(S.s2Up?' on':'');document.getElementById('s2auto').style.display=S.s2Up?'block':'none';}
+function togS2(){
+  S.s2Up=!S.s2Up;
+  document.getElementById('s2cb').className='cbbox'+(S.s2Up?' on':'');
+  document.getElementById('s2auto').style.display=S.s2Up?'block':'none';
+  saveSettings();
+}
 function manBuy(){
   if(!S.price){lg('WARN','No live price yet','','');return;}
   if(S.inPos){lg('WARN','Already in position','','');return;}
@@ -1387,9 +1401,9 @@ function chSym(){
   S.sym = document.getElementById('sym').value;
   const cl = S.sym.replace('USDT','');
   set('bclbl', cl); set('avbl-clbl', cl);
-  // silent=true → no "Reconnecting" flash, just smoothly switch
   connectWS(true);
   loadK();
+  saveSettings();
 }
 function chTF(){
   S.tf = document.getElementById('tf').value;
@@ -1404,6 +1418,7 @@ function chTF(){
   };
   kw.onerror = () => {};
   kw.onclose = () => { if (S.klineWs !== kw) return; S.klineWs = null; };
+  saveSettings();
 }
 function setMode(m){
   S.mode=m;localStorage.setItem('zb_mode',m);syncMode();connectWS(true);loadK();
@@ -1442,6 +1457,103 @@ function saveMod(){const k=document.getElementById('mkey').value.trim(),s=docume
 // LOG
 function lg(type,msg,price,extra){const t=new Date().toTimeString().slice(0,8),el=document.createElement('div');el.className='le';el.innerHTML='<span class="let">'+t+'</span><span class="lek '+type+'">'+type+'</span><span class="lem">'+msg+'</span><span class="lep">'+price+'</span><span class="lex">'+extra+'</span>';const c=document.getElementById('logent');c.insertBefore(el,c.firstChild);if(c.children.length>300)c.removeChild(c.lastChild);}
 function clrLog(){document.getElementById('logent').innerHTML='';}
+
+// ═══════════════════════════════════════════════════════════
+//  SETTINGS PERSISTENCE — save/restore all user settings
+// ═══════════════════════════════════════════════════════════
+
+function saveSettings() {
+  const cfg = {
+    sym:    S.sym,
+    tf:     S.tf,
+    mode:   S.mode,
+    // Line prices
+    buyLine:   S.buyLine,
+    passLine:  S.passLine,
+    sell1Line: S.sell1Line,
+    sell2Line: S.sell2Line,
+    // Trade amount inputs
+    tamt:   document.getElementById('tamt').value,
+    tunit:  document.getElementById('tunit').value,
+    // Trail settings
+    s1intv: document.getElementById('s1intv').value,
+    s1unit: document.getElementById('s1unit').value,
+    s1mv:   document.getElementById('s1mv').value,
+    // 2nd sell auto settings
+    s2Up:   S.s2Up,
+    s2mv:   document.getElementById('s2mv').value,
+    s2tf:   document.getElementById('s2tf').value,
+    // Raw input field values (so inputs are pre-filled)
+    buyp:   document.getElementById('buyp').value,
+    passp:  document.getElementById('passp').value,
+    s1p:    document.getElementById('s1p').value,
+    s2p:    document.getElementById('s2p').value,
+  };
+  localStorage.setItem('zb_cfg', JSON.stringify(cfg));
+}
+
+function restoreSettings() {
+  try {
+    const raw = localStorage.getItem('zb_cfg');
+    if (!raw) return;
+    const cfg = JSON.parse(raw);
+
+    // Symbol
+    if (cfg.sym) {
+      S.sym = cfg.sym;
+      const sel = document.getElementById('sym');
+      for (let i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === cfg.sym) { sel.selectedIndex = i; break; }
+      }
+      const cl = S.sym.replace('USDT','');
+      set('bclbl', cl); set('avbl-clbl', cl);
+    }
+
+    // Timeframe
+    if (cfg.tf) {
+      S.tf = cfg.tf;
+      const sel = document.getElementById('tf');
+      for (let i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === cfg.tf) { sel.selectedIndex = i; break; }
+      }
+    }
+
+    // Trade amount
+    if (cfg.tamt) document.getElementById('tamt').value = cfg.tamt;
+    if (cfg.tunit) document.getElementById('tunit').value = cfg.tunit;
+
+    // Trail settings
+    if (cfg.s1intv) document.getElementById('s1intv').value = cfg.s1intv;
+    if (cfg.s1unit) document.getElementById('s1unit').value = cfg.s1unit;
+    if (cfg.s1mv)   document.getElementById('s1mv').value   = cfg.s1mv;
+
+    // 2nd sell auto settings
+    if (cfg.s2mv) document.getElementById('s2mv').value = cfg.s2mv;
+    if (cfg.s2tf) document.getElementById('s2tf').value = cfg.s2tf;
+    if (cfg.s2Up) {
+      S.s2Up = true;
+      document.getElementById('s2cb').className = 'cbbox on';
+      document.getElementById('s2auto').style.display = 'block';
+    }
+
+    // Restore input field values (so user can see what was set)
+    if (cfg.buyp)  document.getElementById('buyp').value  = cfg.buyp;
+    if (cfg.passp) document.getElementById('passp').value = cfg.passp;
+    if (cfg.s1p)   document.getElementById('s1p').value   = cfg.s1p;
+    if (cfg.s2p)   document.getElementById('s2p').value   = cfg.s2p;
+
+    // Restore line STATE and draw on chart (only if chart is ready)
+    if (cfg.buyLine   !== null && cfg.buyLine   !== undefined) { S.buyLine   = cfg.buyLine;   updLine('buy',   S.buyLine);   }
+    if (cfg.passLine  !== null && cfg.passLine  !== undefined) { S.passLine  = cfg.passLine;  updLine('pass',  S.passLine);  }
+    if (cfg.sell1Line !== null && cfg.sell1Line !== undefined) { S.sell1Line = cfg.sell1Line; updLine('sell1', S.sell1Line); }
+    if (cfg.sell2Line !== null && cfg.sell2Line !== undefined) { S.sell2Line = cfg.sell2Line; updLine('sell2', S.sell2Line); }
+    updLS();
+
+    lg('INFO', 'Settings restored from last session', cfg.sym + ' ' + cfg.tf, '');
+  } catch(e) {
+    console.warn('restoreSettings failed:', e);
+  }
+}
 
 // BOOT
 (function boot(){
