@@ -363,11 +363,8 @@ input,select,button{font-family:inherit;font-size:12px;}
   border-bottom:var(--bdr);
   position:relative;
   min-width:0;
-  display:flex;
-  flex-direction:column;
 }
-#chart{width:100%;flex:1;min-height:0;}
-#subchart{flex-shrink:0;}
+#chart{width:100%;height:100%;}
 
 /* ── TRADE LOG (bottom under chart) ── */
 #logpanel{
@@ -572,78 +569,7 @@ input,select,button{font-family:inherit;font-size:12px;}
 #cred{position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9px;color:var(--t3);letter-spacing:.07em;pointer-events:none;z-index:10000;}
 #cred b{color:var(--acid);}
 
-/* ── INDICATOR BAR ── */
-#ind-bar{
-  height:34px;flex-shrink:0;background:var(--ink1);
-  border-bottom:var(--bdr);
-  display:flex;align-items:center;padding:0 10px;gap:4px;
-  overflow-x:auto;overflow-y:hidden;
-}
-#ind-bar::-webkit-scrollbar{height:2px;}
-.ind-btn{
-  display:flex;align-items:center;gap:4px;
-  padding:3px 9px;border-radius:4px;cursor:pointer;
-  font-size:10px;font-weight:600;letter-spacing:.05em;
-  border:1px solid var(--ink4);background:transparent;
-  color:var(--t2);transition:.15s;white-space:nowrap;
-  font-family:var(--sans);
-}
-.ind-btn:hover{border-color:var(--t2);color:var(--t0);}
-.ind-btn.on{color:var(--ink);border-color:transparent;}
-.ind-btn.on.sma7  {background:#f0c040;}
-.ind-btn.on.sma25 {background:#e06030;}
-.ind-btn.on.sma99 {background:#8060e0;}
-.ind-btn.on.ema20 {background:#20c0a0;}
-.ind-btn.on.bb    {background:#4090d0;}
-.ind-btn.on.vol   {background:#50a050;}
-.ind-btn.on.rsi   {background:#c060c0;}
-.ind-btn.on.macd  {background:#d08020;}
-.ind-sep{width:1px;height:18px;background:var(--ink4);flex-shrink:0;margin:0 3px;}
-.ind-settings-btn{
-  padding:3px 8px;border-radius:4px;border:1px solid var(--ink4);
-  background:transparent;color:var(--t2);cursor:pointer;font-size:11px;
-  transition:.15s;margin-left:4px;
-}
-.ind-settings-btn:hover{border-color:var(--sky);color:var(--sky);}
 
-/* Sub-chart pane (RSI / MACD) */
-#subchart{
-  height:120px;flex-shrink:0;position:relative;
-  background:var(--ink);border-top:var(--bdr);display:none;
-}
-#subchart.visible{display:block;}
-#subchart-canvas{width:100%;height:100%;}
-.subchart-label{
-  position:absolute;top:4px;left:8px;
-  font-family:var(--mono);font-size:9px;color:var(--t2);
-  pointer-events:none;z-index:5;display:flex;gap:12px;
-}
-.subchart-label span{display:flex;align-items:center;gap:3px;}
-.sclbl-dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
-
-/* Indicator settings popup */
-#ind-popup{
-  position:fixed;top:82px;left:230px;
-  background:var(--ink2);border:1px solid var(--ink4);
-  border-radius:8px;padding:14px;width:260px;
-  z-index:3000;display:none;
-  box-shadow:0 12px 40px rgba(0,0,0,.7);
-}
-#ind-popup.open{display:block;}
-.ip-title{font-size:11px;font-weight:700;color:var(--t0);margin-bottom:12px;}
-.ip-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-.ip-label{font-size:10px;color:var(--t2);flex:1;}
-.ip-inp{
-  width:64px;background:var(--ink);border:1px solid var(--ink4);
-  color:var(--t0);font-family:var(--mono);font-size:11px;
-  padding:4px 6px;border-radius:4px;outline:none;text-align:right;
-}
-.ip-inp:focus{border-color:var(--sky);}
-.ip-apply{
-  width:100%;padding:7px;border-radius:4px;background:var(--acid);
-  color:var(--ink);border:none;font-family:var(--sans);font-size:11px;
-  font-weight:700;cursor:pointer;margin-top:6px;
-}
 </style>
 </head>
 <body>
@@ -753,53 +679,6 @@ input,select,button{font-family:inherit;font-size:12px;}
     </div>
   </div>
 
-  <!-- INDICATOR BAR -->
-  <div id="ind-bar">
-    <button class="ind-btn sma7"  id="btn-sma7"  onclick="toggleInd('sma7')">SMA 7</button>
-    <button class="ind-btn sma25" id="btn-sma25" onclick="toggleInd('sma25')">SMA 25</button>
-    <button class="ind-btn sma99" id="btn-sma99" onclick="toggleInd('sma99')">SMA 99</button>
-    <div class="ind-sep"></div>
-    <button class="ind-btn ema20" id="btn-ema20" onclick="toggleInd('ema20')">EMA 20</button>
-    <div class="ind-sep"></div>
-    <button class="ind-btn bb"    id="btn-bb"    onclick="toggleInd('bb')">BB(20,2)</button>
-    <div class="ind-sep"></div>
-    <button class="ind-btn vol"   id="btn-vol"   onclick="toggleInd('vol')">VOL</button>
-    <div class="ind-sep"></div>
-    <button class="ind-btn rsi"   id="btn-rsi"   onclick="toggleInd('rsi')">RSI(14)</button>
-    <button class="ind-btn macd"  id="btn-macd"  onclick="toggleInd('macd')">MACD</button>
-    <div class="ind-sep"></div>
-    <button class="ind-settings-btn" onclick="toggleIndSettings()">⚙ Settings</button>
-  </div>
-
-  <!-- INDICATOR SETTINGS POPUP -->
-  <div id="ind-popup">
-    <div class="ip-title">Indicator Settings</div>
-    <div class="ip-row"><span class="ip-label">SMA periods</span>
-      <input class="ip-inp" id="ip-sma7"  type="number" value="7"  min="1">
-      <input class="ip-inp" id="ip-sma25" type="number" value="25" min="1">
-      <input class="ip-inp" id="ip-sma99" type="number" value="99" min="1">
-    </div>
-    <div class="ip-row"><span class="ip-label">EMA period</span>
-      <input class="ip-inp" id="ip-ema20" type="number" value="20" min="1">
-    </div>
-    <div class="ip-row"><span class="ip-label">BB period / std</span>
-      <input class="ip-inp" id="ip-bbp" type="number" value="20" min="2">
-      <input class="ip-inp" id="ip-bbs" type="number" value="2"  min="0.1" step="0.1">
-    </div>
-    <div class="ip-row"><span class="ip-label">RSI period</span>
-      <input class="ip-inp" id="ip-rsi" type="number" value="14" min="2">
-    </div>
-    <div class="ip-row"><span class="ip-label">MACD fast/slow/sig</span>
-      <input class="ip-inp" id="ip-mf" type="number" value="12" min="2">
-      <input class="ip-inp" id="ip-ms" type="number" value="26" min="2">
-    </div>
-    <div class="ip-row">
-      <span class="ip-label">Signal</span>
-      <input class="ip-inp" id="ip-msig" type="number" value="9" min="2">
-    </div>
-    <button class="ip-apply" onclick="applyIndSettings()">Apply</button>
-  </div>
-
   <!-- WORKSPACE -->
   <div id="workspace">
 
@@ -886,13 +765,7 @@ input,select,button{font-family:inherit;font-size:12px;}
     </div><!-- /left -->
 
     <!-- ── CHART (center — dominant) ── -->
-    <div id="ca">
-      <div id="chart"></div>
-      <div id="subchart">
-        <div id="subchart-canvas"></div>
-        <div class="subchart-label" id="subchart-label"></div>
-      </div>
-    </div>
+    <div id="ca"><div id="chart"></div></div>
 
     <!-- ── RIGHT (Binance-style trading panel) ── -->
     <div id="right">
@@ -1131,8 +1004,6 @@ function launch(){
     // Refresh ticker list every 60 seconds
     setInterval(function(){ if(!SS.loading) loadAllTickers(); }, 60000);
     lg('INFO','Terminal connected',S.mode.toUpperCase(),'');
-    syncIndButtons();
-    syncIndInputs();
   });
 }
 
@@ -1165,379 +1036,6 @@ async function fetchBal(){
 
 // CHART
 function wfc(cb,n=0){if(typeof LightweightCharts!=='undefined')cb();else if(n<120)setTimeout(()=>wfc(cb,n+1),100);else document.getElementById('chart').innerHTML='<p style="padding:20px;color:#ff4520;font-family:monospace;">Chart library failed — check internet.</p>';}
-// ═══════════════════════════════════════════════════════════
-//  INDICATORS ENGINE
-// ═══════════════════════════════════════════════════════════
-
-var IND = {
-  // Which indicators are active
-  active: JSON.parse(localStorage.getItem('zb_ind') || '{"sma7":false,"sma25":false,"sma99":false,"ema20":false,"bb":false,"vol":false,"rsi":false,"macd":false}'),
-  // LightweightCharts series references
-  series: {},
-  // Sub-chart (RSI/MACD) — separate chart instance
-  subChart: null,
-  subSeries: {},
-  subMode: null, // 'rsi' or 'macd' or null
-  // Settings
-  cfg: JSON.parse(localStorage.getItem('zb_ind_cfg') || '{"sma7":7,"sma25":25,"sma99":99,"ema20":20,"bbp":20,"bbs":2,"rsi":14,"mf":12,"ms":26,"msig":9}'),
-};
-
-// ── Math helpers ─────────────────────────────────────────────
-
-function calcSMA(closes, period) {
-  var result = new Array(closes.length).fill(null);
-  for (var i = period - 1; i < closes.length; i++) {
-    var sum = 0;
-    for (var j = 0; j < period; j++) sum += closes[i - j];
-    result[i] = sum / period;
-  }
-  return result;
-}
-
-function calcEMA(closes, period) {
-  var result = new Array(closes.length).fill(null);
-  var k = 2 / (period + 1);
-  var ema = closes[0];
-  result[0] = ema;
-  for (var i = 1; i < closes.length; i++) {
-    ema = closes[i] * k + ema * (1 - k);
-    if (i >= period - 1) result[i] = ema;
-  }
-  return result;
-}
-
-function calcBB(closes, period, stdMult) {
-  var sma = calcSMA(closes, period);
-  var upper = new Array(closes.length).fill(null);
-  var lower = new Array(closes.length).fill(null);
-  for (var i = period - 1; i < closes.length; i++) {
-    var sum2 = 0;
-    for (var j = 0; j < period; j++) {
-      var diff = closes[i - j] - sma[i];
-      sum2 += diff * diff;
-    }
-    var sd = Math.sqrt(sum2 / period);
-    upper[i] = sma[i] + stdMult * sd;
-    lower[i] = sma[i] - stdMult * sd;
-  }
-  return { mid: sma, upper: upper, lower: lower };
-}
-
-function calcRSI(closes, period) {
-  var result = new Array(closes.length).fill(null);
-  if (closes.length < period + 1) return result;
-  var gains = 0, losses = 0;
-  for (var i = 1; i <= period; i++) {
-    var d = closes[i] - closes[i - 1];
-    if (d > 0) gains += d; else losses -= d;
-  }
-  var avgGain = gains / period;
-  var avgLoss = losses / period;
-  result[period] = 100 - 100 / (1 + (avgLoss === 0 ? Infinity : avgGain / avgLoss));
-  for (var i = period + 1; i < closes.length; i++) {
-    var d = closes[i] - closes[i - 1];
-    var g = d > 0 ? d : 0;
-    var l = d < 0 ? -d : 0;
-    avgGain = (avgGain * (period - 1) + g) / period;
-    avgLoss = (avgLoss * (period - 1) + l) / period;
-    result[i] = 100 - 100 / (1 + (avgLoss === 0 ? Infinity : avgGain / avgLoss));
-  }
-  return result;
-}
-
-function calcMACD(closes, fast, slow, signal) {
-  var emaFast = calcEMA(closes, fast);
-  var emaSlow = calcEMA(closes, slow);
-  var macdLine = closes.map(function(_, i) {
-    return (emaFast[i] !== null && emaSlow[i] !== null) ? emaFast[i] - emaSlow[i] : null;
-  });
-  // Signal line = EMA of macdLine
-  var validMacd = macdLine.filter(function(v) { return v !== null; });
-  var sigResult = new Array(closes.length).fill(null);
-  var k = 2 / (signal + 1);
-  var sigEma = validMacd[0];
-  var idx = 0;
-  for (var i = 0; i < closes.length; i++) {
-    if (macdLine[i] !== null) {
-      sigEma = macdLine[i] * k + sigEma * (1 - k);
-      if (idx >= signal - 1) sigResult[i] = sigEma;
-      idx++;
-    }
-  }
-  var hist = closes.map(function(_, i) {
-    return (macdLine[i] !== null && sigResult[i] !== null) ? macdLine[i] - sigResult[i] : null;
-  });
-  return { macd: macdLine, signal: sigResult, hist: hist };
-}
-
-// ── Create / destroy indicator series ────────────────────────
-
-function createOverlaySeries(key, color, lineWidth, lineStyle) {
-  if (IND.series[key]) { try { chart.removeSeries(IND.series[key]); } catch(e){} }
-  lineStyle = lineStyle || LightweightCharts.LineStyle.Solid;
-  IND.series[key] = chart.addLineSeries({
-    color: color, lineWidth: lineWidth || 1,
-    lineStyle: lineStyle,
-    priceLineVisible: false, lastValueVisible: true,
-    crosshairMarkerVisible: false,
-  });
-}
-
-function createAreaBand(keyUp, keyMid, keyLow, color) {
-  var alpha = 'rgba(' + hexToRgb(color) + ',0.12)';
-  IND.series[keyUp]  = chart.addLineSeries({ color: color, lineWidth:1, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
-  IND.series[keyMid] = chart.addLineSeries({ color: color, lineWidth:1, lineStyle:LightweightCharts.LineStyle.Dashed, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
-  IND.series[keyLow] = chart.addLineSeries({ color: color, lineWidth:1, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
-}
-
-function hexToRgb(hex) {
-  var r = parseInt(hex.slice(1,3),16);
-  var g = parseInt(hex.slice(3,5),16);
-  var b = parseInt(hex.slice(5,7),16);
-  return r + ',' + g + ',' + b;
-}
-
-function destroySeries(key) {
-  if (IND.series[key]) { try { chart.removeSeries(IND.series[key]); } catch(e){} delete IND.series[key]; }
-}
-
-// ── Sub-chart (RSI / MACD) ───────────────────────────────────
-
-function initSubChart() {
-  var el = document.getElementById('subchart-canvas');
-  if (IND.subChart) { try { IND.subChart.remove(); } catch(e){} }
-  IND.subChart = LightweightCharts.createChart(el, {
-    width:  el.offsetWidth,
-    height: 120,
-    layout: { background:{color:'#000408'}, textColor:'#445566', fontFamily:"'JetBrains Mono',monospace" },
-    grid:   { vertLines:{color:'#0c1422'}, horzLines:{color:'#0c1422'} },
-    crosshair: { vertLine:{color:'rgba(0,207,255,.15)',style:1}, horzLine:{color:'rgba(0,207,255,.15)',style:1} },
-    rightPriceScale: { borderColor:'#0c1422', scaleMargins:{top:0.1,bottom:0.1} },
-    timeScale: { borderColor:'#0c1422', timeVisible:true, secondsVisible:false, visible:false },
-    handleScroll: false, handleScale: false,
-  });
-  new ResizeObserver(function() {
-    IND.subChart.applyOptions({ width: el.offsetWidth });
-  }).observe(el);
-  // Sync sub-chart scroll with main chart
-  chart.timeScale().subscribeVisibleTimeRangeChange(function(range) {
-    if (IND.subChart && range) {
-      try { IND.subChart.timeScale().setVisibleRange(range); } catch(e) {}
-    }
-  });
-}
-
-function destroySubChart() {
-  if (IND.subChart) { try { IND.subChart.remove(); } catch(e){} IND.subChart = null; }
-  IND.subSeries = {};
-  IND.subMode = null;
-  document.getElementById('subchart').classList.remove('visible');
-  document.getElementById('subchart-label').innerHTML = '';
-  // Resize main chart to reclaim space
-  var area = document.getElementById('ca');
-  chart.applyOptions({ width: area.clientWidth, height: area.clientHeight });
-}
-
-function showSubChart(mode) {
-  IND.subMode = mode;
-  document.getElementById('subchart').classList.add('visible');
-  initSubChart();
-}
-
-// ── Main render function — recalculates all active indicators ─
-
-function renderIndicators() {
-  var key  = chKey();
-  var bars = CH.bars[key] || [];
-  if (bars.length < 2 || !series) return;
-
-  var times  = bars.map(function(b) { return b.time; });
-  var closes = bars.map(function(b) { return b.close; });
-  var highs  = bars.map(function(b) { return b.high; });
-  var lows   = bars.map(function(b) { return b.low; });
-  var volumes= bars.map(function(b) { return b.close; }); // use close as vol proxy if no vol data
-
-  // ── SMA 7
-  if (IND.active.sma7) {
-    var p = IND.cfg.sma7;
-    var vals = calcSMA(closes, p);
-    createOverlaySeries('sma7', '#f0c040', 1);
-    IND.series.sma7.setData(vals.map(function(v,i) { return v!==null?{time:times[i],value:v}:null; }).filter(Boolean));
-  } else { destroySeries('sma7'); }
-
-  // ── SMA 25
-  if (IND.active.sma25) {
-    var p = IND.cfg.sma25;
-    var vals = calcSMA(closes, p);
-    createOverlaySeries('sma25', '#e06030', 1);
-    IND.series.sma25.setData(vals.map(function(v,i) { return v!==null?{time:times[i],value:v}:null; }).filter(Boolean));
-  } else { destroySeries('sma25'); }
-
-  // ── SMA 99
-  if (IND.active.sma99) {
-    var p = IND.cfg.sma99;
-    var vals = calcSMA(closes, p);
-    createOverlaySeries('sma99', '#8060e0', 1);
-    IND.series.sma99.setData(vals.map(function(v,i) { return v!==null?{time:times[i],value:v}:null; }).filter(Boolean));
-  } else { destroySeries('sma99'); }
-
-  // ── EMA 20
-  if (IND.active.ema20) {
-    var p = IND.cfg.ema20;
-    var vals = calcEMA(closes, p);
-    createOverlaySeries('ema20', '#20c0a0', 1);
-    IND.series.ema20.setData(vals.map(function(v,i) { return v!==null?{time:times[i],value:v}:null; }).filter(Boolean));
-  } else { destroySeries('ema20'); }
-
-  // ── Bollinger Bands
-  if (IND.active.bb) {
-    var bb = calcBB(closes, IND.cfg.bbp, IND.cfg.bbs);
-    createAreaBand('bbUp','bbMid','bbLow','#4090d0');
-    IND.series.bbUp.setData( bb.upper.map(function(v,i){return v!==null?{time:times[i],value:v}:null;}).filter(Boolean));
-    IND.series.bbMid.setData(bb.mid.map(function(v,i)  {return v!==null?{time:times[i],value:v}:null;}).filter(Boolean));
-    IND.series.bbLow.setData(bb.lower.map(function(v,i) {return v!==null?{time:times[i],value:v}:null;}).filter(Boolean));
-  } else { destroySeries('bbUp'); destroySeries('bbMid'); destroySeries('bbLow'); }
-
-  // ── Volume (histogram on main chart, separate price scale)
-  if (IND.active.vol) {
-    if (!IND.series.vol) {
-      IND.series.vol = chart.addHistogramSeries({
-        priceFormat:     { type:'volume' },
-        priceScaleId:    'vol',
-        scaleMargins:    { top:0.85, bottom:0 },
-        lastValueVisible: false,
-        priceLineVisible: false,
-      });
-    }
-    // Use bars directly — colour green/red based on open/close
-    var volData = bars.map(function(b) {
-      var clr = b.close >= b.open ? 'rgba(200,255,0,0.4)' : 'rgba(255,69,32,0.4)';
-      // Try volume field if present, else use a synthetic value
-      var vol = b.vol || (b.high - b.low) * 1000;
-      return { time: b.time, value: vol, color: clr };
-    });
-    IND.series.vol.setData(volData);
-  } else { destroySeries('vol'); }
-
-  // ── RSI (sub-chart)
-  if (IND.active.rsi) {
-    if (IND.subMode !== 'rsi') {
-      // Destroy MACD if active
-      if (IND.subMode === 'macd') { IND.active.macd = false; syncIndButtons(); }
-      IND.subSeries = {};
-      showSubChart('rsi');
-    }
-    var rsiVals = calcRSI(closes, IND.cfg.rsi);
-    if (!IND.subSeries.rsi) {
-      IND.subSeries.rsi = IND.subChart.addLineSeries({ color:'#c060c0', lineWidth:1, priceLineVisible:false, lastValueVisible:true, crosshairMarkerVisible:false });
-      // Overbought / oversold reference lines
-      IND.subSeries.r70 = IND.subChart.addLineSeries({ color:'rgba(255,69,32,0.4)', lineWidth:1, lineStyle:LightweightCharts.LineStyle.Dashed, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
-      IND.subSeries.r30 = IND.subChart.addLineSeries({ color:'rgba(200,255,0,0.4)',  lineWidth:1, lineStyle:LightweightCharts.LineStyle.Dashed, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
-    }
-    IND.subSeries.rsi.setData(rsiVals.map(function(v,i){return v!==null?{time:times[i],value:v}:null;}).filter(Boolean));
-    var t0 = times[0], tN = times[times.length-1];
-    IND.subSeries.r70.setData([{time:t0,value:70},{time:tN,value:70}]);
-    IND.subSeries.r30.setData([{time:t0,value:30},{time:tN,value:30}]);
-    document.getElementById('subchart-label').innerHTML = '<span><span class="sclbl-dot" style="background:#c060c0"></span>RSI(' + IND.cfg.rsi + ')</span>';
-  } else if (IND.subMode === 'rsi' && !IND.active.macd) {
-    destroySubChart();
-  }
-
-  // ── MACD (sub-chart)
-  if (IND.active.macd) {
-    if (IND.subMode !== 'macd') {
-      if (IND.subMode === 'rsi') { IND.active.rsi = false; syncIndButtons(); }
-      IND.subSeries = {};
-      showSubChart('macd');
-    }
-    var macdData = calcMACD(closes, IND.cfg.mf, IND.cfg.ms, IND.cfg.msig);
-    if (!IND.subSeries.macdLine) {
-      IND.subSeries.macdLine = IND.subChart.addLineSeries({ color:'#d08020', lineWidth:1, priceLineVisible:false, lastValueVisible:true, crosshairMarkerVisible:false });
-      IND.subSeries.macdSig  = IND.subChart.addLineSeries({ color:'#60a0ff', lineWidth:1, priceLineVisible:false, lastValueVisible:true, crosshairMarkerVisible:false });
-      IND.subSeries.macdHist = IND.subChart.addHistogramSeries({ priceLineVisible:false, lastValueVisible:false });
-    }
-    IND.subSeries.macdLine.setData(macdData.macd.map(function(v,i)   {return v!==null?{time:times[i],value:v}:null;}).filter(Boolean));
-    IND.subSeries.macdSig.setData(macdData.signal.map(function(v,i)  {return v!==null?{time:times[i],value:v}:null;}).filter(Boolean));
-    IND.subSeries.macdHist.setData(macdData.hist.map(function(v,i)   {return v!==null?{time:times[i],value:v,color:v>=0?'rgba(200,255,0,0.6)':'rgba(255,69,32,0.6)'}:null;}).filter(Boolean));
-    document.getElementById('subchart-label').innerHTML =
-      '<span><span class="sclbl-dot" style="background:#d08020"></span>MACD(' + IND.cfg.mf + ',' + IND.cfg.ms + ',' + IND.cfg.msig + ')</span>' +
-      '<span><span class="sclbl-dot" style="background:#60a0ff"></span>Signal</span>' +
-      '<span><span class="sclbl-dot" style="background:rgba(200,255,0,0.6)"></span>Hist</span>';
-  } else if (IND.subMode === 'macd' && !IND.active.rsi) {
-    destroySubChart();
-  }
-}
-
-// ── Toggle an indicator on/off ────────────────────────────────
-
-function toggleInd(key) {
-  IND.active[key] = !IND.active[key];
-  syncIndButtons();
-  localStorage.setItem('zb_ind', JSON.stringify(IND.active));
-  renderIndicators();
-}
-
-function syncIndButtons() {
-  var keys = ['sma7','sma25','sma99','ema20','bb','vol','rsi','macd'];
-  keys.forEach(function(k) {
-    var btn = document.getElementById('btn-' + k);
-    if (!btn) return;
-    if (IND.active[k]) btn.classList.add('on');
-    else btn.classList.remove('on');
-  });
-}
-
-// ── Settings popup ────────────────────────────────────────────
-
-function toggleIndSettings() {
-  var pop = document.getElementById('ind-popup');
-  pop.classList.toggle('open');
-  if (pop.classList.contains('open')) {
-    setTimeout(function() { document.addEventListener('click', indPopupOutside); }, 0);
-  }
-}
-
-function indPopupOutside(e) {
-  var pop = document.getElementById('ind-popup');
-  var btn = document.querySelector('.ind-settings-btn');
-  if (!pop.contains(e.target) && (!btn || !btn.contains(e.target))) {
-    pop.classList.remove('open');
-    document.removeEventListener('click', indPopupOutside);
-  }
-}
-
-function applyIndSettings() {
-  IND.cfg.sma7  = +document.getElementById('ip-sma7').value  || 7;
-  IND.cfg.sma25 = +document.getElementById('ip-sma25').value || 25;
-  IND.cfg.sma99 = +document.getElementById('ip-sma99').value || 99;
-  IND.cfg.ema20 = +document.getElementById('ip-ema20').value || 20;
-  IND.cfg.bbp   = +document.getElementById('ip-bbp').value   || 20;
-  IND.cfg.bbs   = +document.getElementById('ip-bbs').value   || 2;
-  IND.cfg.rsi   = +document.getElementById('ip-rsi').value   || 14;
-  IND.cfg.mf    = +document.getElementById('ip-mf').value    || 12;
-  IND.cfg.ms    = +document.getElementById('ip-ms').value    || 26;
-  IND.cfg.msig  = +document.getElementById('ip-msig').value  || 9;
-  localStorage.setItem('zb_ind_cfg', JSON.stringify(IND.cfg));
-  // Destroy all sub-chart series to force recreate with new params
-  if (IND.subChart) { IND.subSeries = {}; try { IND.subChart.remove(); } catch(e){} IND.subChart = null; if(IND.subMode) showSubChart(IND.subMode); }
-  renderIndicators();
-  document.getElementById('ind-popup').classList.remove('open');
-}
-
-// ── Sync inputs from cfg on popup open ───────────────────────
-function syncIndInputs() {
-  document.getElementById('ip-sma7').value  = IND.cfg.sma7;
-  document.getElementById('ip-sma25').value = IND.cfg.sma25;
-  document.getElementById('ip-sma99').value = IND.cfg.sma99;
-  document.getElementById('ip-ema20').value = IND.cfg.ema20;
-  document.getElementById('ip-bbp').value   = IND.cfg.bbp;
-  document.getElementById('ip-bbs').value   = IND.cfg.bbs;
-  document.getElementById('ip-rsi').value   = IND.cfg.rsi;
-  document.getElementById('ip-mf').value    = IND.cfg.mf;
-  document.getElementById('ip-ms').value    = IND.cfg.ms;
-  document.getElementById('ip-msig').value  = IND.cfg.msig;
-}
-
 function initChart(){
   var el   = document.getElementById('chart');
   var area = document.getElementById('ca');
@@ -1578,19 +1076,6 @@ var CH = {
 
 function chKey() { return S.sym + '_' + S.tf; }
 
-// Reset all indicator series on symbol/TF change
-function resetIndicatorSeries() {
-  ['sma7','sma25','sma99','ema20','bbUp','bbMid','bbLow','vol'].forEach(function(k) {
-    if (IND.series[k]) { try { chart.removeSeries(IND.series[k]); } catch(e){} delete IND.series[k]; }
-  });
-  // Destroy sub-chart if open — will be recreated by renderIndicators
-  if (IND.subChart) {
-    try { IND.subChart.remove(); } catch(e){}
-    IND.subChart = null;
-    IND.subSeries = {};
-  }
-}
-
 // ── Parse raw Binance kline array into bar objects ────────────────────────────
 function parseBars(raw) {
   if (!Array.isArray(raw)) return [];
@@ -1625,15 +1110,11 @@ function applyBarsToChart(bars) {
   });
   series.setData(chartBars);
   redrawAllLines();
-  // Re-render indicators with updated data
-  renderIndicators();
 }
 
 // ── Initial load: fetch last 1500 candles, then auto-extend backwards ─────────
 async function loadK() {
   var key = chKey();
-  // Reset indicator series so stale overlay from previous sym/tf is cleared
-  resetIndicatorSeries();
   // Reset cache for this sym+tf when switching
   CH.bars[key]       = [];
   CH.oldestMs[key]   = null;
