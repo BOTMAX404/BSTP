@@ -1500,31 +1500,11 @@ function clPos(p, triggeredLine) {
   ['pentry','pqty','pval','ppnl','ppct'].forEach(id => set(id, '—'));
   updStats();
   // ── Remove lines that have done their job ──────────────────
-  // Pass line is a one-per-trade gate — always remove after close
+  // Pass line: one-per-trade gate — remove after every trade close
   removeLine('pass');
-  // Remove the sell line that triggered (sell1 or sell2)
+  // Remove whichever sell line triggered the exit
   if (triggeredLine) {
     removeLine(triggeredLine);
-  }
-  // Belt-and-suspenders: if sell2 triggered, make absolutely sure it's gone
-  if (triggeredLine === 'sell2') {
-    S.sell2Line = null;
-    if (series && clines['sell2']) {
-      try { series.removePriceLine(clines['sell2']); } catch(e) {}
-      clines['sell2'] = null;
-    }
-    var s2el = document.getElementById('s2p');
-    if (s2el) s2el.value = '';
-  }
-  // Similarly for sell1
-  if (triggeredLine === 'sell1') {
-    S.sell1Line = null;
-    if (series && clines['sell1']) {
-      try { series.removePriceLine(clines['sell1']); } catch(e) {}
-      clines['sell1'] = null;
-    }
-    var s1el = document.getElementById('s1p');
-    if (s1el) s1el.value = '';
   }
   updLS();
   saveSettings();
@@ -1614,19 +1594,22 @@ const linpMap={buy:'buyp',pass:'passp',sell1:'s1p',sell2:'s2p'};
 // Called automatically when a line finishes its job
 function removeLine(k) {
   if (!k) return;
-  // Always clear state regardless of current value
-  S[k + 'Line'] = null;
-  // Remove from chart — try both the cached reference AND a direct series call
+
+  // Step 1: Remove from chart FIRST (before clearing state)
+  // This must happen while clines[k] still holds a valid reference
   if (series && clines[k]) {
     try { series.removePriceLine(clines[k]); } catch(e) {}
-    clines[k] = null;
   }
-  // Belt-and-suspenders: if updLine still has something, clear it
   clines[k] = null;
-  // Clear the input field
+
+  // Step 2: Clear state
+  S[k + 'Line'] = null;
+
+  // Step 3: Clear the input field
   var inpId = linpMap[k];
   if (inpId) { var el = document.getElementById(inpId); if (el) el.value = ''; }
-  // Update sidebar
+
+  // Step 4: Update sidebar dots and badges
   updLS();
   lg('INFO', k.toUpperCase() + ' line removed', '', '');
   saveSettings();
