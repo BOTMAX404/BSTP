@@ -902,7 +902,8 @@ input,select,button{font-family:inherit;font-size:12px;}
       <div class="log-header">
         <span class="log-tab active">Trade Log</span>
         <span class="log-tab" id="log-mode-lbl" style="color:var(--t2);font-size:9px;font-family:var(--mono);">DEMO</span>
-        <button class="log-clr" onclick="clrLog()">Clear</button>
+        <button class="log-clr" onclick="clrLog()">Clear Log</button>
+        <button class="log-clr" onclick="clearMarkers()" style="border-color:rgba(200,255,0,.3);color:var(--acid);" title="Remove all buy/sell markers from chart">Clear Markers</button>
       </div>
       <div id="logent"></div>
     </div>
@@ -936,6 +937,7 @@ const S={
   // Bot state flags
   buyLock:false,      // prevents double-fire on buy
   sellLock:false,     // prevents double-fire on sell
+  markers:[],         // all buy/sell markers for the chart [{time,type,price,pnl}]
   passZone:false,    // true once price has crossed ABOVE pass line
   inZone:false,      // true once price has entered between sell1 and sell2
   prevPrice:0,       // last tick price, for direction tracking
@@ -1111,6 +1113,7 @@ function applyBarsToChart(bars) {
   });
   series.setData(chartBars);
   redrawAllLines();
+  drawMarkers();
 }
 
 // ── Initial load: fetch last 1500 candles, then auto-extend backwards ─────────
@@ -1461,6 +1464,67 @@ async function exSell(reason, p, triggeredLine) {
 }
 
 // ── ENTER POSITION ───────────────────────────────────────────
+// ── TRADE MARKERS ────────────────────────────────────────────
+// Add a marker at current candle time and redraw all markers on chart
+function addMarker(type, price, pnl) {
+  var msPerTf = {
+    '1m':60,'3m':180,'5m':300,'15m':900,
+    '30m':1800,'1h':3600,'4h':14400,'1d':86400
+  };
+  var tfSec = msPerTf[S.tf] || 300;
+  var t = Math.floor(Date.now() / 1000 / tfSec) * tfSec;
+
+  // If a marker already exists at this exact time, offset by +1 so they don't stack
+  var used = {};
+  S.markers.forEach(function(m) { used[m.time] = true; });
+  while (used[t]) t += 1;
+
+  S.markers.push({ time: t, type: type, price: price, pnl: pnl });
+  drawMarkers();
+}
+
+function drawMarkers() {
+  if (!series || S.markers.length === 0) return;
+
+  var mapped = S.markers.map(function(m) {
+    if (m.type === 'buy') {
+      return {
+        time:     m.time,
+        position: 'belowBar',
+        color:    '#c8ff00',
+        shape:    'arrowUp',
+        // Short label — just price, no "B @" prefix to save space
+        text:     '$' + m.price.toFixed(2),
+        size:     1,
+      };
+    } else {
+      // Show sell price + PnL
+      var pnlStr = '';
+      if (m.pnl !== undefined) {
+        pnlStr = ' (' + (m.pnl >= 0 ? '+' : '') + '$' + m.pnl.toFixed(2) + ')';
+      }
+      return {
+        time:     m.time,
+        position: 'aboveBar',
+        color:    m.pnl !== undefined && m.pnl >= 0 ? '#c8ff00' : '#ff4520',
+        shape:    'arrowDown',
+        text:     '$' + m.price.toFixed(2) + pnlStr,
+        size:     1,
+      };
+    }
+  });
+
+  // Sort by time ascending (LightweightCharts requires this)
+  mapped.sort(function(a, b) { return a.time - b.time; });
+
+  try { series.setMarkers(mapped); } catch(e) {}
+}
+
+function clearMarkers() {
+  S.markers = [];
+  try { if (series) series.setMarkers([]); } catch(e) {}
+}
+
 function enPos(p, q) {
   S.inPos = true;
   S.entry = p;
@@ -1475,12 +1539,14 @@ function enPos(p, q) {
   startS1();
   // ── BUY LINE has done its job — remove it ──────────────────
   removeLine('buy');
+  addMarker('buy', p);
   lg('INFO', 'Position opened — BUY line removed', '$' + p.toFixed(2), 'qty: ' + q);
 }
 
 // ── CLOSE POSITION ───────────────────────────────────────────
 function clPos(p, triggeredLine) {
   const pnl = (p - S.entry) * S.qty;
+  const closePnl = pnl; // capture before state reset
   S.pnl += pnl;
   S.trades++;
   if (pnl > 0) S.wins++;
@@ -1506,6 +1572,7 @@ function clPos(p, triggeredLine) {
   if (triggeredLine) {
     removeLine(triggeredLine);
   }
+  addMarker('sell', p, closePnl);
   updLS();
   saveSettings();
   lg('INFO', 'Position closed — lines cleaned up', '', '');
