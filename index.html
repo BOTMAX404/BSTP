@@ -549,6 +549,150 @@ input,select,button{font-family:inherit;font-size:12px;}
 .avbl-l{color:var(--t2);}
 .avbl-v{font-family:var(--mono);color:var(--t0);}
 
+/* ── ORDER PANEL (TradingView style) ── */
+
+/* Order type tabs */
+.op-tabs{display:flex;border-bottom:var(--bdr);flex-shrink:0;}
+.op-tab{
+  flex:1;padding:9px 4px;text-align:center;font-size:12px;font-weight:500;
+  color:var(--t2);cursor:pointer;border-bottom:2px solid transparent;
+  transition:.15s;letter-spacing:.02em;
+}
+.op-tab.active{color:var(--t0);border-bottom-color:var(--t0);}
+.op-tab:hover:not(.active){color:var(--t1);}
+
+/* Side selector — Sell | spread | Buy */
+.op-side{display:flex;flex-shrink:0;border-bottom:var(--bdr);}
+.op-side-sell{
+  flex:1;padding:8px 12px 7px;cursor:pointer;
+  background:var(--ink1);border:none;text-align:left;
+  transition:background .15s;
+}
+.op-side-sell.active{background:rgba(255,69,32,.18);}
+.op-side-sell:hover:not(.active){background:var(--ink3);}
+.op-side-sell .ossl{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--t2);display:block;margin-bottom:3px;}
+.op-side-sell.active .ossl{color:var(--fire);}
+.op-side-sell .ossp{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--t1);display:block;line-height:1;}
+.op-side-sell.active .ossp{color:var(--fire);}
+
+.op-spread-mid{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:0 8px;background:var(--ink1);flex-shrink:0;
+  border-left:var(--bdr);border-right:var(--bdr);
+}
+.op-spread-val{font-family:var(--mono);font-size:11px;color:var(--t1);font-weight:600;}
+.op-spread-lbl{font-size:8px;color:var(--t3);letter-spacing:.05em;margin-top:1px;}
+
+.op-side-buy{
+  flex:1;padding:8px 12px 7px;cursor:pointer;
+  background:var(--ink1);border:none;text-align:right;
+  transition:background .15s;
+}
+.op-side-buy.active{background:rgba(30,100,220,.2);}
+.op-side-buy:hover:not(.active){background:var(--ink3);}
+.op-side-buy .osbl{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--t2);display:block;margin-bottom:3px;}
+.op-side-buy.active .osbl{color:#5590ff;}
+.op-side-buy .osbp{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--t1);display:block;line-height:1;}
+.op-side-buy.active .osbp{color:#5590ff;}
+
+/* Fields */
+.op-field{margin-bottom:0;}
+.op-field-lbl{
+  font-size:11px;font-weight:500;color:var(--t0);
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:5px;
+}
+.op-field-lbl .op-offset{font-family:var(--mono);font-size:10px;color:var(--t2);}
+
+.op-inp-row{
+  display:flex;align-items:center;
+  background:var(--ink);border:1px solid var(--ink4);
+  border-radius:4px;overflow:hidden;transition:.15s;
+}
+.op-inp-row:focus-within{border-color:var(--sky);}
+.op-inp-row.active-border{border-color:rgba(255,69,32,.5);}
+.op-inp-row input{
+  flex:1;background:transparent;border:none;color:var(--t0);
+  font-family:var(--mono);font-size:12px;padding:8px 10px;outline:none;min-width:0;
+}
+.op-inp-row input::placeholder{color:var(--t3);}
+.op-inp-unit{
+  font-size:10px;color:var(--t2);padding:0 10px;
+  border-left:1px solid var(--ink4);white-space:nowrap;flex-shrink:0;
+  font-family:var(--mono);
+}
+.op-inp-eq{
+  font-family:var(--mono);font-size:10px;color:var(--t2);
+  display:flex;justify-content:space-between;margin-top:3px;
+}
+.op-units-lbl{display:flex;align-items:center;gap:5px;}
+.op-units-lbl .udrop{font-size:10px;color:var(--t2);cursor:pointer;}
+
+/* Exits section */
+.op-exits-hd{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 0 6px;cursor:pointer;user-select:none;
+}
+.op-exits-hd .oel{font-size:12px;font-weight:600;color:var(--t0);}
+.op-exits-hd .oec{font-size:13px;color:var(--t2);transition:.2s;line-height:1;}
+.op-exits-hd .oec.open{transform:rotate(180deg);display:inline-block;}
+
+.op-exit-blk{margin-bottom:10px;}
+.op-exit-row-hd{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:5px;
+}
+.op-exit-name{font-size:11px;color:var(--t1);display:flex;align-items:center;gap:4px;}
+.op-exit-name .drop{font-size:10px;color:var(--t2);}
+
+/* Toggle switch */
+.op-tog{
+  width:36px;height:18px;border-radius:9px;background:var(--ink4);
+  cursor:pointer;position:relative;flex-shrink:0;transition:.2s;
+  border:none;
+}
+.op-tog.on{background:#1a5ce8;}
+.op-tog::after{
+  content:'';position:absolute;top:2px;left:2px;
+  width:14px;height:14px;border-radius:50%;background:#fff;transition:.2s;
+}
+.op-tog.on::after{left:20px;}
+
+/* Extra settings */
+.op-extra-lbl{font-size:12px;font-weight:600;color:var(--t0);margin-bottom:8px;margin-top:6px;}
+.op-tif-sel{
+  width:100%;background:var(--ink);border:1px solid var(--ink4);
+  color:var(--t0);font-family:var(--sans);font-size:12px;
+  padding:8px 10px;border-radius:4px;outline:none;cursor:pointer;
+}
+.op-tif-sel option{background:var(--ink2);}
+
+/* Order info box */
+.op-info-box{
+  border:1px solid var(--ink4);border-radius:4px;
+  padding:10px 12px;margin-top:6px;
+}
+.op-info-title{font-size:12px;font-weight:600;color:var(--t0);margin-bottom:8px;}
+.op-info-row{display:flex;justify-content:space-between;align-items:center;padding:2px 0;}
+.op-info-l{font-size:11px;color:var(--t2);display:flex;align-items:center;gap:4px;}
+.op-info-l .qmark{width:14px;height:14px;border-radius:50%;background:var(--ink4);font-size:8px;color:var(--t2);display:inline-flex;align-items:center;justify-content:center;cursor:help;}
+.op-info-v{font-family:var(--mono);font-size:11px;color:var(--t0);font-weight:600;}
+.op-margin-bar{height:3px;background:var(--ink4);border-radius:2px;margin:4px 0 6px;}
+.op-margin-fill{height:100%;background:#1a5ce8;border-radius:2px;transition:.3s;width:8%;}
+
+/* Execute button */
+.op-exec{
+  width:100%;padding:14px 12px;border:none;border-radius:4px;
+  font-family:var(--sans);font-size:13px;font-weight:700;
+  cursor:pointer;transition:.2s;line-height:1.3;
+}
+.op-exec.buy{background:#1a5ce8;color:#fff;}
+.op-exec.buy:hover{background:#1550cc;}
+.op-exec.sell{background:var(--fire);color:#fff;}
+.op-exec.sell:hover{background:#e03010;}
+.op-exec.disabled{background:var(--ink4);color:var(--t2);cursor:not-allowed;}
+.op-exec-main{font-size:14px;font-weight:700;display:block;}
+.op-exec-sub{font-size:10px;font-weight:500;opacity:.8;display:block;margin-top:2px;}
 /* ── MODAL ── */
 #mbg{position:fixed;inset:0;background:rgba(0,4,8,.85);display:none;align-items:center;justify-content:center;z-index:5000;backdrop-filter:blur(6px);}
 #mbg.open{display:flex;}
@@ -768,132 +912,269 @@ input,select,button{font-family:inherit;font-size:12px;}
     <!-- ── CHART (center — dominant) ── -->
     <div id="ca"><div id="chart"></div></div>
 
-    <!-- ── RIGHT (Binance-style trading panel) ── -->
+    <!-- ── RIGHT PANEL ── -->
     <div id="right">
+      <!-- Tab row: Order | 4-Line Bot -->
       <div class="rp-tabs">
-        <div class="rp-tab active">4-Line Bot</div>
-        <div class="rp-tab" style="margin-left:auto;font-size:10px;color:var(--t3);cursor:default;">Spot</div>
+        <div class="rp-tab active" id="tab-order" onclick="switchRpTab('order')">Order</div>
+        <div class="rp-tab" id="tab-bot" onclick="switchRpTab('bot')">4-Line Bot</div>
       </div>
 
-      <div class="rp-body">
+      <!-- ═══ ORDER PANEL ═══ -->
+      <div id="panel-order" style="display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0;">
 
-        <!-- Amount -->
-        <div class="rp-section">
-          <div class="rp-label">Trade Amount</div>
-          <div class="bnc-inp-wrap">
-            <span class="bil">Amount</span>
-            <input type="number" id="tamt" oninput="saveSettings()" value="100" min="0" placeholder="0.00">
-            <select id="tunit" onchange="saveSettings()" class="biu" style="padding:0 8px;background:transparent;border:none;border-left:1px solid var(--ink4);color:var(--t2);cursor:pointer;outline:none;">
-              <option value="usdt">USDT</option>
-              <option value="coin">Coin</option>
-            </select>
+        <!-- Side selector: Sell | spread | Buy -->
+        <div class="op-side">
+          <button class="op-side-sell" id="op-sell-btn" onclick="setOrderSide('sell')">
+            <span class="ossl">Sell</span>
+            <span class="ossp" id="op-sell-price">——</span>
+          </button>
+          <div class="op-spread-mid">
+            <span class="op-spread-val" id="op-spread">—</span>
+            <span class="op-spread-lbl">spread</span>
           </div>
-          <div style="text-align:right;font-family:var(--mono);font-size:10px;color:var(--t2);" id="test">≈ —</div>
-          <!-- Available -->
-          <div class="avbl-row" style="margin-top:4px;">
-            <span class="avbl-l">Avbl USDT</span><span class="avbl-v" id="avbl-usdt">—</span>
-          </div>
-          <div class="avbl-row">
-            <span class="avbl-l">Avbl <span id="avbl-clbl">BTC</span></span><span class="avbl-v" id="avbl-coin">—</span>
-          </div>
+          <button class="op-side-buy active" id="op-buy-btn" onclick="setOrderSide('buy')">
+            <span class="osbl">Buy</span>
+            <span class="osbp" id="op-buy-price">——</span>
+          </button>
         </div>
 
-        <!-- BUY LINE -->
-        <div class="rp-section">
-          <div class="line-head">
-            <div class="line-stripe buy"></div>
-            <div class="line-head-name buy">Buy Price Line</div>
-            <div class="line-badge" id="bbadge">Off</div>
-          </div>
-          <div class="line-set-row">
-            <input class="ls-inp" id="buyp" oninput="saveSettings()" type="number" placeholder="Buy price…" step="0.01">
-            <button class="ls-btn buy" onclick="setL('buy')">Set</button>
-            <button class="ls-btn ghost" onclick="useC('buy')" title="Use current price">≈</button>
-            <button class="ls-btn ghost" onclick="clrL('buy')">✕</button>
-          </div>
+        <!-- Order type tabs -->
+        <div class="op-tabs">
+          <div class="op-tab active" id="ot-market" onclick="setOrderType('market')">Market</div>
+          <div class="op-tab" id="ot-limit"  onclick="setOrderType('limit')">Limit</div>
+          <div class="op-tab" id="ot-stop"   onclick="setOrderType('stop')">Stop</div>
         </div>
 
-        <!-- PASS LINE -->
-        <div class="rp-section">
-          <div class="line-head">
-            <div class="line-stripe pass"></div>
-            <div class="line-head-name pass">Pass Price Line</div>
-            <div class="line-badge" id="pbadge">Off</div>
-          </div>
-          <div class="line-set-row">
-            <input class="ls-inp" id="passp" oninput="saveSettings()" type="number" placeholder="Pass price…" step="0.01">
-            <button class="ls-btn pass" onclick="setL('pass')">Set</button>
-            <button class="ls-btn ghost" onclick="useC('pass')" title="Use current price">≈</button>
-            <button class="ls-btn ghost" onclick="clrL('pass')">✕</button>
-          </div>
-          <div class="hint">↑ Allows price to pass 1st sell upward<br><b>↓ Instant sell on reversal through this</b></div>
-        </div>
+        <!-- Scrollable body -->
+        <div style="flex:1;overflow-y:auto;min-height:0;padding:10px 12px;display:flex;flex-direction:column;gap:10px;">
 
-        <!-- 1ST SELL LINE -->
-        <div class="rp-section">
-          <div class="line-head">
-            <div class="line-stripe s1"></div>
-            <div class="line-head-name s1">1st Sell Line</div>
-            <div class="line-badge" id="s1badge">Off</div>
-          </div>
-          <div class="line-set-row">
-            <input class="ls-inp" id="s1p" oninput="saveSettings()" type="number" placeholder="1st sell price…" step="0.01">
-            <button class="ls-btn s1" onclick="setL('sell1')">Set</button>
-            <button class="ls-btn ghost" onclick="useC('sell1')" title="Use current price">≈</button>
-            <button class="ls-btn ghost" onclick="clrL('sell1')">✕</button>
-          </div>
-          <div class="sub-row">
-            <span class="sl">Trail every</span>
-            <input class="sub-inp" id="s1intv" oninput="saveSettings()" type="number" value="5" min="1">
-            <select class="sub-sel" id="s1unit" onchange="saveSettings()">
-              <option value="60">min</option>
-              <option value="3600">hr</option>
-              <option value="1">sec</option>
-            </select>
-            <span class="sl">up $</span>
-            <input class="sub-inp" id="s1mv" oninput="saveSettings()" type="number" value="5" min="0.01">
-          </div>
-          <div class="trail-lbl" id="s1trail">Trail: inactive</div>
-        </div>
-
-        <!-- 2ND SELL LINE -->
-        <div class="rp-section">
-          <div class="line-head">
-            <div class="line-stripe s2"></div>
-            <div class="line-head-name s2">2nd Sell Line</div>
-            <div class="line-badge" id="s2badge">Off</div>
-          </div>
-          <div class="line-set-row">
-            <input class="ls-inp" id="s2p" oninput="saveSettings()" type="number" placeholder="2nd sell price…" step="0.01">
-            <button class="ls-btn s2" onclick="setL('sell2')">Set</button>
-            <button class="ls-btn ghost" onclick="useC('sell2')" title="Use current price">≈</button>
-            <button class="ls-btn ghost" onclick="clrL('sell2')">✕</button>
-          </div>
-          <div class="cbr" onclick="togS2()">
-            <div class="cbbox" id="s2cb"></div>
-            <span class="cblabel">Auto ↑ on new candle</span>
-          </div>
-          <div id="s2auto" style="display:none;">
-            <div class="sub-row">
-              <span class="sl">Move up $</span>
-              <input class="sub-inp" id="s2mv" oninput="saveSettings()" type="number" value="5" min="0.01" style="width:64px;">
-              <span class="sl">TF</span>
-              <select class="sub-sel" id="s2tf" onchange="saveSettings()">
-                <option value="1m">1m</option><option value="3m">3m</option>
-                <option value="5m" selected>5m</option><option value="15m">15m</option>
-                <option value="30m">30m</option><option value="1h">1h</option>
-              </select>
+          <!-- Limit / Stop price row (hidden for market) -->
+          <div id="op-limit-row" style="display:none;" class="op-field">
+            <div class="op-field-lbl">Price <span class="op-offset" id="op-price-offset">—</span></div>
+            <div class="op-inp-row">
+              <input type="number" id="op-limit-price" placeholder="0.00" step="0.01" oninput="updOrderInfo()">
+              <span class="op-inp-unit">USDT</span>
             </div>
           </div>
+
+          <!-- Units -->
+          <div class="op-field">
+            <div class="op-field-lbl">
+              <span class="op-units-lbl">Units <span class="udrop">▾</span></span>
+              <span class="op-offset" id="op-units-usd">— USD</span>
+            </div>
+            <div class="op-inp-row">
+              <input type="number" id="op-units" value="1" min="0" step="any" placeholder="0" oninput="updOrderInfo()">
+              <select id="op-unit-sel" onchange="updOrderInfo()" style="background:transparent;border:none;border-left:1px solid var(--ink4);color:var(--t2);font-family:var(--mono);font-size:10px;padding:0 8px;outline:none;cursor:pointer;min-width:52px;">
+                <option value="coin">Coin</option>
+                <option value="usdt">USDT</option>
+              </select>
+            </div>
+            <div class="op-inp-eq">
+              <span id="op-eq-line">≈ — USDT</span>
+            </div>
+          </div>
+
+          <!-- Exits -->
+          <div>
+            <div class="op-exits-hd" onclick="toggleExits()">
+              <span class="oel">Exits</span>
+              <span class="oec open" id="exits-toggle">&#8963;</span>
+            </div>
+            <div id="exits-body">
+              <!-- Take Profit -->
+              <div class="op-exit-blk">
+                <div class="op-exit-row-hd">
+                  <span class="op-exit-name">Take profit, price <span class="drop">&#8964;</span></span>
+                  <button class="op-tog" id="tp-toggle" onclick="toggleTP()"></button>
+                </div>
+                <div class="op-inp-row" id="tp-inp-row">
+                  <input type="number" id="op-tp" placeholder="0.00" step="0.01" oninput="updOrderInfo()">
+                  <span class="op-inp-unit" id="op-tp-ticks">— ticks</span>
+                </div>
+              </div>
+              <!-- Stop Loss -->
+              <div class="op-exit-blk">
+                <div class="op-exit-row-hd">
+                  <span class="op-exit-name">Stop loss, price <span class="drop">&#8964;</span></span>
+                  <button class="op-tog" id="sl-toggle" onclick="toggleSL()"></button>
+                </div>
+                <div class="op-inp-row" id="sl-inp-row">
+                  <input type="number" id="op-sl" placeholder="0.00" step="0.01" oninput="updOrderInfo()">
+                  <span class="op-inp-unit" id="op-sl-ticks">— ticks</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Extra settings (Limit / Stop only) -->
+          <div id="op-extra" style="display:none;">
+            <div class="op-extra-lbl">Extra settings</div>
+            <div style="font-size:11px;color:var(--t2);margin-bottom:5px;">Time in force</div>
+            <select class="op-tif-sel" id="op-tif">
+              <option value="gtc">Good till cancelled</option>
+              <option value="day">Day</option>
+              <option value="week" selected>Week</option>
+              <option value="ioc">Immediate or cancel</option>
+              <option value="fok">Fill or kill</option>
+            </select>
+          </div>
+
+          <!-- Order info (Market only) -->
+          <div id="op-mkt-info" class="op-info-box">
+            <div class="op-info-title">Order info</div>
+            <div class="op-info-row">
+              <span class="op-info-l">Margin <span class="qmark">?</span></span>
+              <span class="op-info-v" id="oi-margin">—</span>
+            </div>
+            <div class="op-margin-bar"><div class="op-margin-fill" id="oi-margin-bar"></div></div>
+            <div class="op-info-row">
+              <span class="op-info-l">Leverage</span>
+              <span class="op-info-v">10:1</span>
+            </div>
+            <div class="op-info-row">
+              <span class="op-info-l">Tick value</span>
+              <span class="op-info-v">0.01 USD</span>
+            </div>
+            <div class="op-info-row">
+              <span class="op-info-l">Trade value</span>
+              <span class="op-info-v" id="oi-tradeVal">—</span>
+            </div>
+          </div>
+
+        </div><!-- /scroll -->
+
+        <!-- Execute button -->
+        <div style="padding:10px 12px;border-top:var(--bdr);flex-shrink:0;">
+          <button class="op-exec buy" id="op-exec-btn" onclick="execOrder()">
+            <span class="op-exec-main" id="op-exec-main">Buy</span>
+            <span class="op-exec-sub" id="op-exec-sub"></span>
+          </button>
         </div>
 
-      </div><!-- /rp-body -->
+        <!-- Hidden balance IDs needed by other code -->
+        <span id="avbl-usdt" style="display:none;">—</span>
+        <span id="avbl-clbl" style="display:none;">BTC</span>
+        <span id="avbl-coin" style="display:none;">—</span>
 
-      <!-- Manual override (bottom like Binance's Buy/Sell buttons) -->
-      <div class="man-btns">
-        <button class="man-btn b" onclick="manBuy()">⬆ Buy Now</button>
-        <button class="man-btn s" onclick="manSell()">⬇ Sell Now</button>
-      </div>
+      </div><!-- /panel-order -->
+
+      <!-- ═══ BOT PANEL ═══ -->
+      <div id="panel-bot" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+        <div class="rp-body">
+
+          <!-- Amount (bot) -->
+          <div class="rp-section">
+            <div class="rp-label">Trade Amount</div>
+            <div class="bnc-inp-wrap">
+              <span class="bil">Amount</span>
+              <input type="number" id="tamt" oninput="saveSettings()" value="100" min="0" placeholder="0.00">
+              <select id="tunit" onchange="saveSettings()" class="biu" style="padding:0 8px;background:transparent;border:none;border-left:1px solid var(--ink4);color:var(--t2);cursor:pointer;outline:none;">
+                <option value="usdt">USDT</option>
+                <option value="coin">Coin</option>
+              </select>
+            </div>
+            <div style="text-align:right;font-family:var(--mono);font-size:10px;color:var(--t2);" id="test">≈ —</div>
+          </div>
+
+          <!-- BUY LINE -->
+          <div class="rp-section">
+            <div class="line-head">
+              <div class="line-stripe buy"></div>
+              <div class="line-head-name buy">Buy Price Line</div>
+              <div class="line-badge" id="bbadge">Off</div>
+            </div>
+            <div class="line-set-row">
+              <input class="ls-inp" id="buyp" oninput="saveSettings()" type="number" placeholder="Buy price…" step="0.01">
+              <button class="ls-btn buy" onclick="setL('buy')">Set</button>
+              <button class="ls-btn ghost" onclick="useC('buy')" title="Use current price">≈</button>
+              <button class="ls-btn ghost" onclick="clrL('buy')">✕</button>
+            </div>
+          </div>
+
+          <!-- PASS LINE -->
+          <div class="rp-section">
+            <div class="line-head">
+              <div class="line-stripe pass"></div>
+              <div class="line-head-name pass">Pass Price Line</div>
+              <div class="line-badge" id="pbadge">Off</div>
+            </div>
+            <div class="line-set-row">
+              <input class="ls-inp" id="passp" oninput="saveSettings()" type="number" placeholder="Pass price…" step="0.01">
+              <button class="ls-btn pass" onclick="setL('pass')">Set</button>
+              <button class="ls-btn ghost" onclick="useC('pass')" title="Use current price">≈</button>
+              <button class="ls-btn ghost" onclick="clrL('pass')">✕</button>
+            </div>
+            <div class="hint">↑ Allows price to pass 1st sell upward<br><b>↓ Instant sell on reversal through this</b></div>
+          </div>
+
+          <!-- 1ST SELL LINE -->
+          <div class="rp-section">
+            <div class="line-head">
+              <div class="line-stripe s1"></div>
+              <div class="line-head-name s1">1st Sell Line</div>
+              <div class="line-badge" id="s1badge">Off</div>
+            </div>
+            <div class="line-set-row">
+              <input class="ls-inp" id="s1p" oninput="saveSettings()" type="number" placeholder="1st sell price…" step="0.01">
+              <button class="ls-btn s1" onclick="setL('sell1')">Set</button>
+              <button class="ls-btn ghost" onclick="useC('sell1')" title="Use current price">≈</button>
+              <button class="ls-btn ghost" onclick="clrL('sell1')">✕</button>
+            </div>
+            <div class="sub-row">
+              <span class="sl">Trail every</span>
+              <input class="sub-inp" id="s1intv" oninput="saveSettings()" type="number" value="5" min="1">
+              <select class="sub-sel" id="s1unit" onchange="saveSettings()">
+                <option value="60">min</option>
+                <option value="3600">hr</option>
+                <option value="1">sec</option>
+              </select>
+              <span class="sl">up $</span>
+              <input class="sub-inp" id="s1mv" oninput="saveSettings()" type="number" value="5" min="0.01">
+            </div>
+            <div class="trail-lbl" id="s1trail">Trail: inactive</div>
+          </div>
+
+          <!-- 2ND SELL LINE -->
+          <div class="rp-section">
+            <div class="line-head">
+              <div class="line-stripe s2"></div>
+              <div class="line-head-name s2">2nd Sell Line</div>
+              <div class="line-badge" id="s2badge">Off</div>
+            </div>
+            <div class="line-set-row">
+              <input class="ls-inp" id="s2p" oninput="saveSettings()" type="number" placeholder="2nd sell price…" step="0.01">
+              <button class="ls-btn s2" onclick="setL('sell2')">Set</button>
+              <button class="ls-btn ghost" onclick="useC('sell2')" title="Use current price">≈</button>
+              <button class="ls-btn ghost" onclick="clrL('sell2')">✕</button>
+            </div>
+            <div class="cbr" onclick="togS2()">
+              <div class="cbbox" id="s2cb"></div>
+              <span class="cblabel">Auto ↑ on new candle</span>
+            </div>
+            <div id="s2auto" style="display:none;">
+              <div class="sub-row">
+                <span class="sl">Move up $</span>
+                <input class="sub-inp" id="s2mv" oninput="saveSettings()" type="number" value="5" min="0.01" style="width:64px;">
+                <span class="sl">TF</span>
+                <select class="sub-sel" id="s2tf" onchange="saveSettings()">
+                  <option value="1m">1m</option><option value="3m">3m</option>
+                  <option value="5m" selected>5m</option><option value="15m">15m</option>
+                  <option value="30m">30m</option><option value="1h">1h</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /rp-body -->
+
+        <!-- Bot manual override -->
+        <div class="man-btns">
+          <button class="man-btn b" onclick="manBuy()">⬆ Buy Now</button>
+          <button class="man-btn s" onclick="manSell()">⬇ Sell Now</button>
+        </div>
+      </div><!-- /panel-bot -->
 
     </div><!-- /right -->
 
@@ -1007,6 +1288,9 @@ function launch(){
     // Refresh ticker list every 60 seconds
     setInterval(function(){ if(!SS.loading) loadAllTickers(); }, 60000);
     lg('INFO','Terminal connected',S.mode.toUpperCase(),'');
+    // Init order panel — TP/SL start disabled
+    if(document.getElementById('tp-inp-row')){document.getElementById('tp-inp-row').style.opacity='0.45';document.getElementById('tp-inp-row').style.pointerEvents='none';}
+    if(document.getElementById('sl-inp-row')){document.getElementById('sl-inp-row').style.opacity='0.45';document.getElementById('sl-inp-row').style.pointerEvents='none';}
   });
 }
 
@@ -1728,6 +2012,7 @@ function manSell(){
 // UI
 function updPriceUI(p){
   const e=document.getElementById('tbprice');e.textContent=p.toFixed(p>100?2:4);e.className=p>=S.prev?'up':'dn';
+  updOrderPrices();
 }
 function updPosUI(p){
   if(!S.inPos)return;
@@ -2137,6 +2422,264 @@ function restoreSettings() {
     console.warn('restoreSettings failed:', e);
   }
 }
+
+// ═══════════════════════════════════════════════════════════
+//  ORDER PANEL — TradingView-style manual order entry
+// ═══════════════════════════════════════════════════════════
+
+var OP = {
+  side:      'buy',
+  orderType: 'market',
+  tpOn:      false,
+  slOn:      false,
+  exitsOpen: true,
+};
+
+// ── Panel tab switch ─────────────────────────────────────────
+function switchRpTab(tab) {
+  document.getElementById('tab-order').className = 'rp-tab' + (tab==='order' ? ' active' : '');
+  document.getElementById('tab-bot').className   = 'rp-tab' + (tab==='bot'   ? ' active' : '');
+  document.getElementById('panel-order').style.display = tab==='order' ? 'flex' : 'none';
+  document.getElementById('panel-bot').style.display   = tab==='bot'   ? 'flex' : 'none';
+}
+
+// ── Order type ────────────────────────────────────────────────
+function setOrderType(t) {
+  OP.orderType = t;
+  ['market','limit','stop'].forEach(function(x) {
+    document.getElementById('ot-' + x).className = 'op-tab' + (x===t ? ' active' : '');
+  });
+  // Price row visibility
+  var limitRow = document.getElementById('op-limit-row');
+  limitRow.style.display = t==='market' ? 'none' : 'block';
+  // Extra settings visibility
+  var extraEl = document.getElementById('op-extra');
+  extraEl.style.display = t==='market' ? 'none' : 'block';
+  // Order info box visibility
+  var mktInfo = document.getElementById('op-mkt-info');
+  mktInfo.style.display = t==='market' ? 'block' : 'none';
+  updOrderInfo();
+}
+
+// ── Order side ────────────────────────────────────────────────
+function setOrderSide(side) {
+  OP.side = side;
+  var sellBtn = document.getElementById('op-sell-btn');
+  var buyBtn  = document.getElementById('op-buy-btn');
+  var execBtn = document.getElementById('op-exec-btn');
+  var mainLbl = document.getElementById('op-exec-main');
+  if (side === 'sell') {
+    sellBtn.classList.add('active');
+    buyBtn.classList.remove('active');
+    execBtn.className = 'op-exec sell';
+    mainLbl.textContent = 'Sell';
+  } else {
+    buyBtn.classList.add('active');
+    sellBtn.classList.remove('active');
+    execBtn.className = 'op-exec buy';
+    mainLbl.textContent = 'Buy';
+  }
+  updOrderInfo();
+}
+
+// ── Live price update ────────────────────────────────────────
+function updOrderPrices() {
+  if (!S.price) return;
+  var p = S.price;
+  var dec = p > 1000 ? 2 : p > 1 ? 2 : 4;
+  var spread = parseFloat((p * 0.00001 + 0.01).toFixed(dec));
+  var sellP  = parseFloat((p - spread/2).toFixed(dec));
+  var buyP   = parseFloat((p + spread/2).toFixed(dec));
+
+  var spEl = document.getElementById('op-sell-price');
+  var bpEl = document.getElementById('op-buy-price');
+  var sprdEl = document.getElementById('op-spread');
+  if (spEl) spEl.textContent = sellP.toFixed(dec);
+  if (bpEl) bpEl.textContent = buyP.toFixed(dec);
+  if (sprdEl) sprdEl.textContent = spread.toFixed(dec);
+
+  // Update price offset label for limit/stop
+  if (OP.orderType !== 'market') {
+    var lp = +document.getElementById('op-limit-price').value || p;
+    var refPrice = OP.side === 'buy' ? buyP : sellP;
+    var diff  = lp - refPrice;
+    var label = OP.side === 'buy' ? 'Ask' : 'Bid';
+    var sign  = diff >= 0 ? '+' : '';
+    var offsetEl = document.getElementById('op-price-offset');
+    if (offsetEl) offsetEl.textContent = label + ' ' + sign + diff.toFixed(0);
+  }
+  updOrderInfo();
+}
+
+// ── Order info calculation ───────────────────────────────────
+function updOrderInfo() {
+  if (!S.price) return;
+  var p      = S.price;
+  var dec    = p > 100 ? 2 : 4;
+  var units  = +document.getElementById('op-units').value || 0;
+  var unitSel= document.getElementById('op-unit-sel').value;
+  var sym    = S.sym.replace('USDT','');
+
+  var coinAmt, usdAmt;
+  if (unitSel === 'coin') {
+    coinAmt = units;
+    usdAmt  = units * p;
+    var eqEl = document.getElementById('op-eq-line');
+    if (eqEl) eqEl.textContent = '≈ ' + usdAmt.toFixed(2) + ' USDT';
+  } else {
+    usdAmt  = units;
+    coinAmt = p > 0 ? units / p : 0;
+    var eqEl = document.getElementById('op-eq-line');
+    if (eqEl) eqEl.textContent = '≈ ' + coinAmt.toFixed(6) + ' ' + sym;
+  }
+
+  // USD label
+  var usdEl = document.getElementById('op-units-usd');
+  if (usdEl) usdEl.textContent = usdAmt.toFixed(2) + ' USD';
+
+  // Trade value
+  var tv = coinAmt * p;
+  var tvEl = document.getElementById('oi-tradeVal');
+  if (tvEl) tvEl.textContent = tv.toFixed(2) + ' USD';
+
+  // Margin (trade value / 10 for 10:1 leverage display)
+  var margin = tv / 10;
+  var avblUsdt = S.mode === 'demo' ? S.demoUSDT : 0;
+  var margEl = document.getElementById('oi-margin');
+  if (margEl) margEl.textContent = margin.toFixed(2) + ' / ' + avblUsdt.toFixed(2);
+  var barEl = document.getElementById('oi-margin-bar');
+  if (barEl && avblUsdt > 0) barEl.style.width = Math.min(100, (margin/avblUsdt)*100).toFixed(1) + '%';
+
+  // TP ticks
+  var tpVal = +document.getElementById('op-tp').value;
+  if (tpVal && p) {
+    var tpTicks = Math.round(Math.abs(tpVal - p) / 0.01);
+    var tpEl = document.getElementById('op-tp-ticks');
+    if (tpEl) tpEl.textContent = tpTicks.toLocaleString() + ' ticks';
+  }
+  // SL ticks
+  var slVal = +document.getElementById('op-sl').value;
+  if (slVal && p) {
+    var slTicks = Math.round(Math.abs(slVal - p) / 0.01);
+    var slEl = document.getElementById('op-sl-ticks');
+    if (slEl) slEl.textContent = slTicks.toLocaleString() + ' ticks';
+  }
+
+  // Update execute button sub-label
+  var subEl = document.getElementById('op-exec-sub');
+  if (subEl) {
+    var execP = OP.orderType==='market' ? p : (+document.getElementById('op-limit-price').value || p);
+    var side  = OP.side.charAt(0).toUpperCase() + OP.side.slice(1);
+    var typeStr = OP.orderType.toUpperCase();
+    subEl.textContent = coinAmt.toFixed(6) + ' ' + sym + ' @ ' + execP.toFixed(dec) + ' ' + typeStr;
+  }
+
+  // Update price offset label
+  if (OP.orderType !== 'market') {
+    var lp = +document.getElementById('op-limit-price').value || p;
+    var refPrice = OP.side === 'buy' ? (p + 0.005) : (p - 0.005);
+    var diff = lp - refPrice;
+    var label = OP.side === 'buy' ? 'Ask' : 'Bid';
+    var sign = diff >= 0 ? '+' : '';
+    var offEl = document.getElementById('op-price-offset');
+    if (offEl) offEl.textContent = label + ' ' + sign + Math.round(diff / 0.01);
+  }
+}
+
+// ── TP / SL toggles ──────────────────────────────────────────
+function toggleTP() {
+  OP.tpOn = !OP.tpOn;
+  var tog = document.getElementById('tp-toggle');
+  var row = document.getElementById('tp-inp-row');
+  if (tog) tog.className = 'op-tog' + (OP.tpOn ? ' on' : '');
+  if (row) { row.style.opacity = OP.tpOn ? '1' : '0.45'; row.style.pointerEvents = OP.tpOn ? '' : 'none'; }
+}
+function toggleSL() {
+  OP.slOn = !OP.slOn;
+  var tog = document.getElementById('sl-toggle');
+  var row = document.getElementById('sl-inp-row');
+  if (tog) tog.className = 'op-tog' + (OP.slOn ? ' on' : '');
+  if (row) { row.style.opacity = OP.slOn ? '1' : '0.45'; row.style.pointerEvents = OP.slOn ? '' : 'none'; }
+}
+function toggleExits() {
+  OP.exitsOpen = !OP.exitsOpen;
+  var body = document.getElementById('exits-body');
+  var tog  = document.getElementById('exits-toggle');
+  if (body) body.style.display = OP.exitsOpen ? '' : 'none';
+  if (tog)  tog.className = 'oec' + (OP.exitsOpen ? ' open' : '');
+}
+
+// ── Execute order ─────────────────────────────────────────────
+async function execOrder() {
+  if (!S.price) { lg('WARN','No live price','',''); return; }
+  var units   = +document.getElementById('op-units').value || 0;
+  var unitSel = document.getElementById('op-unit-sel').value;
+  var side    = OP.side.toUpperCase();
+  var dec     = S.price > 100 ? 2 : 4;
+
+  var qty = unitSel==='coin' ? units : (S.price > 0 ? units/S.price : 0);
+  qty = +qty.toFixed(6);
+  if (qty <= 0) { lg('WARN','Enter a valid amount','',''); return; }
+
+  var execPrice = S.price;
+  if (OP.orderType !== 'market') {
+    var lp = +document.getElementById('op-limit-price').value;
+    if (!lp) { lg('WARN','Enter a limit price','',''); return; }
+    execPrice = lp;
+  }
+
+  var sym = S.sym.replace('USDT','');
+  lg('INFO', side + ' ' + OP.orderType.toUpperCase(), '$' + execPrice.toFixed(dec), 'qty: ' + qty + ' ' + sym);
+
+  if (S.mode === 'demo') {
+    if (side === 'BUY') {
+      var cost = qty * execPrice;
+      if (S.demoUSDT < cost) { lg('WARN','Insufficient USDT: need $'+cost.toFixed(2),'',''); return; }
+      S.demoUSDT -= cost;
+      S.demoCoin += qty;
+      addMarker('buy', execPrice);
+      lg('BUY','[PAPER] Order filled','$'+execPrice.toFixed(dec),'qty:'+qty+' '+sym);
+    } else {
+      if (S.demoCoin < qty) { lg('WARN','Insufficient '+sym+': have '+S.demoCoin.toFixed(6),'',''); return; }
+      var proceeds = qty * execPrice;
+      S.demoUSDT += proceeds;
+      S.demoCoin = Math.max(0, S.demoCoin - qty);
+      addMarker('sell', execPrice, 0);
+      lg('SELL','[PAPER] Order filled','$'+execPrice.toFixed(dec),'qty:'+qty+' '+sym);
+    }
+    fetchBal(); updOrderInfo();
+    // Link TP → 2nd Sell Line, SL → 1st Sell Line
+    if (OP.tpOn) {
+      var tpV = +document.getElementById('op-tp').value;
+      if (tpV > 0) { S.sell2Line=tpV; updLine('sell2',tpV); updLS(); lg('INFO','2nd Sell (TP) set','$'+tpV.toFixed(dec),''); }
+    }
+    if (OP.slOn) {
+      var slV = +document.getElementById('op-sl').value;
+      if (slV > 0) { S.sell1Line=slV; updLine('sell1',slV); updLS(); lg('INFO','1st Sell (SL) set','$'+slV.toFixed(dec),''); }
+    }
+  } else {
+    if (S.buyLock || S.sellLock) { lg('WARN','Order in progress…','',''); return; }
+    if (side==='BUY') S.buyLock=true; else S.sellLock=true;
+    try {
+      var r = await placeOrder(side, qty);
+      if (r.orderId) {
+        if (side==='BUY') addMarker('buy',execPrice);
+        else addMarker('sell',execPrice,0);
+        lg(side,'Order #'+r.orderId+' filled','$'+execPrice.toFixed(dec),'qty:'+qty);
+        fetchBal();
+        if (OP.tpOn){var tv=+document.getElementById('op-tp').value;if(tv>0){S.sell2Line=tv;updLine('sell2',tv);updLS();}}
+        if (OP.slOn){var sv=+document.getElementById('op-sl').value;if(sv>0){S.sell1Line=sv;updLine('sell1',sv);updLS();}}
+      } else {
+        lg('WARN','Order failed: '+(r.msg||JSON.stringify(r)),'','');
+      }
+    } catch(e) { lg('WARN','Order error: '+e.message,'',''); }
+    if (side==='BUY') S.buyLock=false; else S.sellLock=false;
+  }
+}
+
+// ── Hook into price updates ──────────────────────────────────
+function onPriceForOrder(p) { updOrderPrices(); }
+
 
 // BOOT
 (function boot(){
