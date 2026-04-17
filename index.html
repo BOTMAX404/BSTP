@@ -1210,35 +1210,6 @@ img{display:block;max-width:100%}
 </style>
 
 <!-- Firebase SDK (compat) — enables server-side security rules enforcement -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script>
-// Initialize Firebase SDK (used for server-side rule enforcement)
-const _fbApp = firebase.initializeApp({
-  apiKey:            'AIzaSyD_J38J4s1727wDkJzs4wvMtGLbiE6yUwQ',
-  authDomain:        'ff-booyah-4b386.firebaseapp.com',
-  projectId:         'ff-booyah-4b386',
-  storageBucket:     'ff-booyah-4b386.firebasestorage.app',
-  messagingSenderId: '555954250936',
-  appId:             '1:555954250936:web:7ad14bcd40a7393484c04d',
-  measurementId:     'G-E620CSC7MG'
-});
-const _fbAuth = firebase.auth();
-const _db     = firebase.firestore();
-
-// Enable Firestore offline persistence for better reliability
-_db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
-
-// Mirror Firebase auth state to our session
-_fbAuth.onAuthStateChanged(async user => {
-  if (!user && S.uid) {
-    // Firebase logged user out (token expired, account disabled, etc.)
-    console.warn('[AUTH] Firebase auth state changed to null — forcing logout');
-    doLogout();
-  }
-});
-</script>
 </head>
 <body>
 
@@ -1916,41 +1887,10 @@ async function _fsRequest(url, options = {}) {
 }
 
 // ================================================================
-// SERVER-SECURE WRITE — uses Firebase SDK (enforces security rules)
-// Collections that require server-side validation use SDK writes
+// FIRESTORE REST API — secure via Firebase Auth token
 // ================================================================
-const _SECURE_COLS = new Set(['players','transactions','tournaments','teams','activity_logs','cheat_flags','private_notifications']);
-
-async function _sdkSet(col, docId, data) {
-  try {
-    if (typeof _db === 'undefined') return false; // SDK not loaded yet
-    await _db.collection(col).doc(docId).set(data, { merge: true });
-    return true;
-  } catch(e) {
-    console.warn(`SDK write failed (${col}/${docId}):`, e.code || e.message);
-    // If permission denied — log as security event
-    if (e.code === 'permission-denied') {
-      _ANTICHEAT._flag('PERMISSION_DENIED', `Blocked write to ${col}/${docId}`);
-    }
-    return false;
-  }
-}
-
-async function _sdkDelete(col, docId) {
-  try {
-    if (typeof _db === 'undefined') return false;
-    await _db.collection(col).doc(docId).delete();
-    return true;
-  } catch(e) { return false; }
-}
-
 async function fsGet(col, docId) {
   try {
-    // Use SDK for secure collections, REST for public reads
-    if (_SECURE_COLS.has(col) && typeof _db !== 'undefined') {
-      const snap = await _db.collection(col).doc(docId).get();
-      return snap.exists ? { ...snap.data(), _fsId: snap.id } : null;
-    }
     const r = await _fsRequest(`${FS_BASE}/${col}/${encodeURIComponent(docId)}`);
     if (!r.ok) return null;
     return _doc2obj(await r.json());
@@ -1959,7 +1899,6 @@ async function fsGet(col, docId) {
 
 async function fsSet(col, docId, data) {
   try {
-    // Strip internal fields
     let safeData = data;
     if (col === 'players' && data && data.avatarCustom !== undefined) {
       safeData = Object.assign({}, data);
@@ -1971,23 +1910,13 @@ async function fsSet(col, docId, data) {
       delete safeData.imgData;
       delete safeData._fsId;
     }
-
-    // Payload size guard
-    const testBody = JSON.stringify(safeData);
-    if (testBody.length > 950000) {
+    const body = JSON.stringify({ fields: _obj2fs(safeData) });
+    if (body.length > 950000) {
       toast('Image too large for server storage. Please use a smaller file.','error');
       return false;
     }
-
-    // Use Firebase SDK for secure collections — rules enforced server-side
-    if (_SECURE_COLS.has(col) && typeof _db !== 'undefined') {
-      return await _sdkSet(col, docId, safeData);
-    }
-
-    // REST fallback for non-sensitive collections
-    const body = JSON.stringify({ fields: _obj2fs(safeData) });
-    const url  = `${FS_BASE}/${col}/${encodeURIComponent(docId)}`;
-    const r    = await _fsRequest(url, { method:'PATCH', body });
+    const url = `${FS_BASE}/${col}/${encodeURIComponent(docId)}`;
+    const r   = await _fsRequest(url, { method:'PATCH', body });
     if (!r.ok) {
       const err = await r.json().catch(()=>({}));
       console.warn(`fsSet failed (${r.status}):`, err?.error?.message || r.statusText);
@@ -1998,11 +1927,6 @@ async function fsSet(col, docId, data) {
 
 async function fsList(col) {
   try {
-    // Use SDK for secure collections
-    if (_SECURE_COLS.has(col) && typeof _db !== 'undefined') {
-      const snap = await _db.collection(col).limit(500).get();
-      return snap.docs.map(d => ({ ...d.data(), _fsId: d.id })).filter(Boolean);
-    }
     const r = await _fsRequest(`${FS_BASE}/${col}?pageSize=300`);
     if (!r.ok) return [];
     const d = await r.json();
@@ -2012,14 +1936,10 @@ async function fsList(col) {
 
 async function fsDelete(col, docId) {
   try {
-    if (_SECURE_COLS.has(col) && typeof _db !== 'undefined') {
-      return await _sdkDelete(col, docId);
-    }
     const r = await _fsRequest(`${FS_BASE}/${col}/${encodeURIComponent(docId)}`, { method:'DELETE' });
     return r.ok;
   } catch(e) { return false; }
 }
-
 // ---- Firestore <-> JS conversion ----
 function _doc2obj(doc) {
   if (!doc || !doc.fields) return null;
@@ -2210,37 +2130,18 @@ async function lpSignIn() {
   _setBusy(true);
   try {
     // Use Firebase Auth SDK for proper token management
-    let idToken, localId, refreshToken;
-    if (typeof _fbAuth !== 'undefined') {
-      const cred = await _fbAuth.signInWithEmailAndPassword(email, pass);
-      idToken      = await cred.user.getIdToken(true);
-      refreshToken = cred.user.refreshToken;
-      localId      = cred.user.uid;
-    } else {
-      // REST fallback
-      const r = await fetch(`${AUTH_URL}:signInWithPassword?key=${FB_API_KEY}`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ email, password:pass, returnSecureToken:true })
-      });
-      const d = await r.json();
-      if (d.error) { _showErr(errEl, _friendlyAuthErr(d.error.message)); return; }
-      idToken = d.idToken; refreshToken = d.refreshToken; localId = d.localId;
-    }
-    S = { token:idToken, refresh:refreshToken, uid:localId, email };
+    const r = await fetch(`${AUTH_URL}:signInWithPassword?key=${FB_API_KEY}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password:pass, returnSecureToken:true })
+    });
+    const d = await r.json();
+    if (d.error) { _showErr(errEl, _friendlyAuthErr(d.error.message)); return; }
+    S = { token:d.idToken, refresh:d.refreshToken, uid:d.localId, email };
     _saveSession();
     _showLoading('Signing in...');
     await _enterApp();
   } catch(e) {
-    const code = e.code || '';
-    if (code === 'auth/user-disabled') {
-      _showErr(errEl, '⛔ Your account has been disabled.');
-    } else if (code.includes('wrong-password') || code.includes('user-not-found')) {
-      _showErr(errEl, 'Invalid email or password.');
-    } else if (code.includes('too-many-requests')) {
-      _showErr(errEl, '⛔ Too many failed attempts. Try again later.');
-    } else {
-      _showErr(errEl, e.message || 'Network error. Check your connection.');
-    }
+    _showErr(errEl, 'Network error. Check your connection.');
   } finally { _setBusy(false); }
 }
 
@@ -2260,24 +2161,13 @@ async function lpSignUp() {
 
   _setBusy(true);
   try {
-    let idToken, localId, refreshToken;
-    if (typeof _fbAuth !== 'undefined') {
-      const cred = await _fbAuth.createUserWithEmailAndPassword(email, pass);
-      idToken      = await cred.user.getIdToken(true);
-      refreshToken = cred.user.refreshToken;
-      localId      = cred.user.uid;
-      // Update display name in Firebase Auth
-      await cred.user.updateProfile({ displayName: name });
-    } else {
-      const r = await fetch(`${AUTH_URL}:signUp?key=${FB_API_KEY}`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ email, password:pass, returnSecureToken:true })
-      });
-      const d = await r.json();
-      if (d.error) { _showErr(errEl, _friendlyAuthErr(d.error.message)); return; }
-      idToken = d.idToken; refreshToken = d.refreshToken; localId = d.localId;
-    }
-    S = { token:idToken, refresh:refreshToken, uid:localId, email };
+    const r = await fetch(`${AUTH_URL}:signUp?key=${FB_API_KEY}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password:pass, returnSecureToken:true })
+    });
+    const d = await r.json();
+    if (d.error) { _showErr(errEl, _friendlyAuthErr(d.error.message)); return; }
+    S = { token:d.idToken, refresh:d.refreshToken, uid:d.localId, email };
     _saveSession();
 
     // Create player profile
@@ -2291,14 +2181,7 @@ async function lpSignUp() {
     _showLoading('Creating your account...');
     await _enterApp();
   } catch(e) {
-    const code = e.code || '';
-    if (code === 'auth/email-already-in-use') {
-      _showErr(errEl, 'This email is already registered.');
-    } else if (code === 'auth/weak-password') {
-      _showErr(errEl, 'Password is too weak. Use at least 6 characters.');
-    } else {
-      _showErr(errEl, e.message || 'Network error. Check your connection.');
-    }
+    _showErr(errEl, e.message || 'Network error. Check your connection.');
   } finally { _setBusy(false); }
 }
 
@@ -2306,17 +2189,13 @@ async function lpForgotPw() {
   const email = prompt('Enter your email address:');
   if (!email) return;
   try {
-    if (typeof _fbAuth !== 'undefined') {
-      await _fbAuth.sendPasswordResetEmail(email);
-    } else {
-      await fetch(`${AUTH_URL}:sendOobCode?key=${FB_API_KEY}`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ requestType:'PASSWORD_RESET', email })
-      });
-    }
+    await fetch(`${AUTH_URL}:sendOobCode?key=${FB_API_KEY}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ requestType:'PASSWORD_RESET', email })
+    });
     toast('Password reset email sent! Check your inbox.','success');
   } catch(e) {
-    toast(e.message || 'Could not send reset email','error');
+    toast('Could not send reset email','error');
   }
 }
 
@@ -2342,8 +2221,6 @@ function doLogout() {
   // Log logout before clearing session
   if (DB.me) _logActivity(_pid(DB.me), 'LOGOUT', `Signed out`);
   if (_syncTimer) clearInterval(_syncTimer);
-  // Sign out from Firebase Auth SDK
-  if (typeof _fbAuth !== 'undefined') _fbAuth.signOut().catch(()=>{});
   _clearSession();
   DB = { me:null, players:[], tournaments:[], teams:[], badges:[], transactions:[], storeItems:[], games:[], notifications:[], teamFinderPosts:[], paymentMethods:[], config:{} };
   S  = { token:null, refresh:null, uid:null, email:null };
