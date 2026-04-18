@@ -714,6 +714,29 @@ input,select,button{font-family:inherit;font-size:12px;}
 #cred{position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9px;color:var(--t3);letter-spacing:.07em;pointer-events:none;z-index:10000;}
 #cred b{color:var(--acid);}
 
+/* ── INDICATOR BAR ── */
+#ind-bar{
+  height:32px;flex-shrink:0;
+  background:var(--ink1);border-bottom:var(--bdr);
+  display:flex;align-items:center;padding:0 10px;gap:5px;
+  overflow-x:auto;overflow-y:hidden;
+}
+#ind-bar::-webkit-scrollbar{height:2px;}
+.ib-label{font-size:9px;color:var(--t2);margin-right:3px;font-family:var(--mono);white-space:nowrap;}
+.ib-btn{
+  padding:3px 10px;border-radius:3px;cursor:pointer;
+  font-size:10px;font-weight:600;letter-spacing:.04em;
+  border:1px solid var(--ink4);background:transparent;
+  color:var(--t2);transition:.15s;white-space:nowrap;
+  font-family:var(--sans);
+}
+.ib-btn:hover{border-color:var(--t1);color:var(--t0);}
+.ib-btn.on{color:#000;}
+.ib-btn.on.utbot  {background:#f0a500;border-color:#f0a500;}
+.ib-btn.on.sniper {background:#2962ff;border-color:#2962ff;}
+.ib-btn.on.smc    {background:#aa55ff;border-color:#aa55ff;}
+.ib-sep{width:1px;height:16px;background:var(--ink4);flex-shrink:0;}
+
 
 </style>
 </head>
@@ -822,6 +845,16 @@ input,select,button{font-family:inherit;font-size:12px;}
       <button class="tb-action-btn" onclick="openMod()">⚙ API</button>
       <button class="tb-action-btn exit" onclick="disc()">⏏ Exit</button>
     </div>
+  </div>
+
+  <!-- INDICATOR BAR -->
+  <div id="ind-bar">
+    <span class="ib-label">Indicators:</span>
+    <button class="ib-btn utbot"  id="ib-utbot"  onclick="toggleIndV2('utbot')">UT Bot</button>
+    <div class="ib-sep"></div>
+    <button class="ib-btn sniper" id="ib-sniper" onclick="toggleIndV2('sniper')">Precision Sniper</button>
+    <div class="ib-sep"></div>
+    <button class="ib-btn smc"    id="ib-smc"    onclick="toggleIndV2('smc')">Smart Money</button>
   </div>
 
   <!-- WORKSPACE -->
@@ -1288,6 +1321,7 @@ function launch(){
     // Refresh ticker list every 60 seconds
     setInterval(function(){ if(!SS.loading) loadAllTickers(); }, 60000);
     lg('INFO','Terminal connected',S.mode.toUpperCase(),'');
+    initIndicators();
     // Init order panel — TP/SL start disabled
     if(document.getElementById('tp-inp-row')){document.getElementById('tp-inp-row').style.opacity='0.45';document.getElementById('tp-inp-row').style.pointerEvents='none';}
     if(document.getElementById('sl-inp-row')){document.getElementById('sl-inp-row').style.opacity='0.45';document.getElementById('sl-inp-row').style.pointerEvents='none';}
@@ -1398,6 +1432,7 @@ function applyBarsToChart(bars) {
   series.setData(chartBars);
   redrawAllLines();
   drawMarkers();
+  renderAllIndicators();
 }
 
 // ── Initial load: fetch last 1500 candles, then auto-extend backwards ─────────
@@ -2680,6 +2715,522 @@ async function execOrder() {
 // ── Hook into price updates ──────────────────────────────────
 function onPriceForOrder(p) { updOrderPrices(); }
 
+
+// ═══════════════════════════════════════════════════════════
+//  INDICATOR ENGINE v2 — UT Bot | Precision Sniper | SMC
+// ═══════════════════════════════════════════════════════════
+
+var IV = {
+  active: JSON.parse(localStorage.getItem('zb_iv') || '{"utbot":false,"sniper":false,"smc":false}'),
+  series: {},   // chart series references keyed by name
+};
+
+// ── Toggle button ─────────────────────────────────────────
+function toggleIndV2(key) {
+  IV.active[key] = !IV.active[key];
+  var btn = document.getElementById('ib-' + key);
+  if (btn) btn.className = 'ib-btn ' + key + (IV.active[key] ? ' on' : '');
+  localStorage.setItem('zb_iv', JSON.stringify(IV.active));
+  if (IV.active[key]) {
+    renderAllIndicators();
+  } else {
+    clearIndSeries(key);
+  }
+}
+
+function syncIndButtons() {
+  Object.keys(IV.active).forEach(function(k) {
+    var btn = document.getElementById('ib-' + k);
+    if (btn) btn.className = 'ib-btn ' + k + (IV.active[k] ? ' on' : '');
+  });
+}
+
+function clearIndSeries(prefix) {
+  Object.keys(IV.series).forEach(function(k) {
+    if (k.indexOf(prefix) === 0) {
+      if (IV.series[k]) { try { chart.removeSeries(IV.series[k]); } catch(e){} }
+      delete IV.series[k];
+    }
+  });
+}
+
+function clearAllIndSeries() {
+  Object.keys(IV.series).forEach(function(k) {
+    if (IV.series[k]) { try { chart.removeSeries(IV.series[k]); } catch(e){} }
+  });
+  IV.series = {};
+}
+
+function getOrCreate(key, type, opts) {
+  if (IV.series[key]) {
+    try { chart.removeSeries(IV.series[key]); } catch(e){}
+  }
+  if (type === 'line') {
+    IV.series[key] = chart.addLineSeries(opts);
+  } else if (type === 'hist') {
+    IV.series[key] = chart.addHistogramSeries(opts);
+  }
+  return IV.series[key];
+}
+
+function renderAllIndicators() {
+  var key  = chKey();
+  var bars = (CH.bars && CH.bars[key]) ? CH.bars[key] : [];
+  if (!bars || bars.length < 10 || !series) return;
+  clearAllIndSeries();
+  if (IV.active.utbot)  renderUTBot(bars);
+  if (IV.active.sniper) renderSniper(bars);
+  if (IV.active.smc)    renderSMC(bars);
+}
+
+// ════════════════════════════════════════════════
+//  MATH LIBRARY
+// ════════════════════════════════════════════════
+
+function mathEMA(vals, period) {
+  var result = new Array(vals.length).fill(null);
+  var k = 2 / (period + 1);
+  var ema = vals[0];
+  result[0] = ema;
+  for (var i = 1; i < vals.length; i++) {
+    if (vals[i] === null || vals[i] === undefined) { result[i] = result[i-1]; continue; }
+    ema = vals[i] * k + ema * (1 - k);
+    if (i >= period - 1) result[i] = ema;
+  }
+  return result;
+}
+
+function mathSMA(vals, period) {
+  var result = new Array(vals.length).fill(null);
+  for (var i = period - 1; i < vals.length; i++) {
+    var sum = 0;
+    for (var j = 0; j < period; j++) sum += (vals[i-j] || 0);
+    result[i] = sum / period;
+  }
+  return result;
+}
+
+function mathATR(bars, period) {
+  var tr  = new Array(bars.length).fill(0);
+  var atr = new Array(bars.length).fill(null);
+  for (var i = 1; i < bars.length; i++) {
+    tr[i] = Math.max(
+      bars[i].high - bars[i].low,
+      Math.abs(bars[i].high - bars[i-1].close),
+      Math.abs(bars[i].low  - bars[i-1].close)
+    );
+  }
+  var sum = 0;
+  for (var i = 1; i <= period && i < bars.length; i++) sum += tr[i];
+  if (period < bars.length) {
+    atr[period] = sum / period;
+    for (var i = period + 1; i < bars.length; i++) {
+      atr[i] = (atr[i-1] * (period-1) + tr[i]) / period;
+    }
+  }
+  return atr;
+}
+
+function mathRSI(closes, period) {
+  var result = new Array(closes.length).fill(null);
+  if (closes.length < period + 1) return result;
+  var gains = 0, losses = 0;
+  for (var i = 1; i <= period; i++) {
+    var d = closes[i] - closes[i-1];
+    if (d > 0) gains += d; else losses -= d;
+  }
+  var ag = gains / period, al = losses / period;
+  result[period] = al === 0 ? 100 : 100 - 100 / (1 + ag/al);
+  for (var i = period + 1; i < closes.length; i++) {
+    var d = closes[i] - closes[i-1];
+    var g = d > 0 ? d : 0, l = d < 0 ? -d : 0;
+    ag = (ag * (period-1) + g) / period;
+    al = (al * (period-1) + l) / period;
+    result[i] = al === 0 ? 100 : 100 - 100 / (1 + ag/al);
+  }
+  return result;
+}
+
+function mathMACD(closes, fast, slow, signal) {
+  var ef = mathEMA(closes, fast);
+  var es = mathEMA(closes, slow);
+  var macd = closes.map(function(_,i) { return (ef[i]!==null&&es[i]!==null)?ef[i]-es[i]:null; });
+  var validM = macd.filter(function(v){return v!==null;});
+  var sig = new Array(closes.length).fill(null);
+  var k = 2/(signal+1), se = validM[0], idx=0;
+  for (var i=0; i<closes.length; i++) {
+    if (macd[i]!==null) {
+      se = macd[i]*k + se*(1-k);
+      if (idx >= signal-1) sig[i] = se;
+      idx++;
+    }
+  }
+  var hist = closes.map(function(_,i){return(macd[i]!==null&&sig[i]!==null)?macd[i]-sig[i]:null;});
+  return {macd:macd, signal:sig, hist:hist};
+}
+
+function mathStdDev(vals, period, sma) {
+  var result = new Array(vals.length).fill(null);
+  for (var i = period-1; i < vals.length; i++) {
+    var mean = sma[i];
+    if (mean === null) continue;
+    var sum2 = 0;
+    for (var j = 0; j < period; j++) {
+      var diff = vals[i-j] - mean;
+      sum2 += diff*diff;
+    }
+    result[i] = Math.sqrt(sum2/period);
+  }
+  return result;
+}
+
+function mathHighest(vals, period) {
+  var result = new Array(vals.length).fill(null);
+  for (var i = period-1; i < vals.length; i++) {
+    var max = -Infinity;
+    for (var j = 0; j < period; j++) if (vals[i-j] > max) max = vals[i-j];
+    result[i] = max;
+  }
+  return result;
+}
+
+function mathLowest(vals, period) {
+  var result = new Array(vals.length).fill(null);
+  for (var i = period-1; i < vals.length; i++) {
+    var min = Infinity;
+    for (var j = 0; j < period; j++) if (vals[i-j] < min) min = vals[i-j];
+    result[i] = min;
+  }
+  return result;
+}
+
+function toData(times, vals) {
+  var out = [];
+  for (var i = 0; i < times.length; i++) {
+    if (vals[i] !== null && vals[i] !== undefined && !isNaN(vals[i])) {
+      out.push({time: times[i], value: vals[i]});
+    }
+  }
+  return out;
+}
+
+// ════════════════════════════════════════════════
+//  UT BOT — ATR Trailing Stop + Buy/Sell signals
+// ════════════════════════════════════════════════
+function renderUTBot(bars) {
+  var KEY_VAL = 1, ATR_PERIOD = 10;
+  var closes = bars.map(function(b){return b.close;});
+  var times  = bars.map(function(b){return b.time;});
+  var atrArr = mathATR(bars, ATR_PERIOD);
+
+  // ATR trailing stop
+  var trail = new Array(bars.length).fill(0);
+  var pos   = new Array(bars.length).fill(0);
+
+  for (var i = 1; i < bars.length; i++) {
+    var src  = closes[i];
+    var atrV = atrArr[i] || 0;
+    var nLoss = KEY_VAL * atrV;
+    var prev  = trail[i-1];
+
+    if (src > prev && closes[i-1] > prev) {
+      trail[i] = Math.max(prev, src - nLoss);
+    } else if (src < prev && closes[i-1] < prev) {
+      trail[i] = Math.min(prev, src + nLoss);
+    } else {
+      trail[i] = src > prev ? src - nLoss : src + nLoss;
+    }
+
+    // pos
+    if (closes[i-1] < trail[i-1] && src > trail[i-1]) pos[i] = 1;
+    else if (closes[i-1] > trail[i-1] && src < trail[i-1]) pos[i] = -1;
+    else pos[i] = pos[i-1] || 0;
+  }
+
+  // Trail line — green above price, red below
+  var trailUp = [], trailDn = [];
+  for (var i = 0; i < bars.length; i++) {
+    if (trail[i] === 0) continue;
+    if (closes[i] >= trail[i]) trailUp.push({time:times[i],value:trail[i]});
+    else trailDn.push({time:times[i],value:trail[i]});
+  }
+
+  var sUp = getOrCreate('utbot_trail_up', 'line', {color:'#00e676',lineWidth:1,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+  var sDn = getOrCreate('utbot_trail_dn', 'line', {color:'#ff5252',lineWidth:1,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+  sUp.setData(trailUp);
+  sDn.setData(trailDn);
+
+  // Buy/Sell markers
+  var markers = [];
+  for (var i = 1; i < bars.length; i++) {
+    var buy  = closes[i] > trail[i] && pos[i] === 1  && pos[i-1] !== 1;
+    var sell = closes[i] < trail[i] && pos[i] === -1 && pos[i-1] !== -1;
+    if (buy) {
+      markers.push({time:times[i],position:'belowBar',color:'#00e676',shape:'arrowUp',text:'Buy',size:1});
+    } else if (sell) {
+      markers.push({time:times[i],position:'aboveBar',color:'#ff5252',shape:'arrowDown',text:'Sell',size:1});
+    }
+  }
+  // UT Bot markers on a dummy hidden series
+  var mSeries = getOrCreate('utbot_markers', 'line', {color:'transparent',lineWidth:0,priceLineVisible:false,lastValueVisible:false,visible:false});
+  try { mSeries.setMarkers(markers); } catch(e){}
+  lg('INFO','UT Bot rendered',bars.length+' bars','');
+}
+
+// ════════════════════════════════════════════════
+//  PRECISION SNIPER — EMA Ribbon + Signals + TP/SL
+// ════════════════════════════════════════════════
+function renderSniper(bars) {
+  var FAST=9, SLOW=21, TREND=55, RSI_P=13, ATR_P=14, SL_MULT=1.5, MIN_SCORE=5;
+  var closes = bars.map(function(b){return b.close;});
+  var highs  = bars.map(function(b){return b.high;});
+  var lows   = bars.map(function(b){return b.low;});
+  var times  = bars.map(function(b){return b.time;});
+
+  var emaF = mathEMA(closes, FAST);
+  var emaS = mathEMA(closes, SLOW);
+  var emaT = mathEMA(closes, TREND);
+  var rsi  = mathRSI(closes, RSI_P);
+  var atr  = mathATR(bars, ATR_P);
+  var macdD= mathMACD(closes, 12, 26, 9);
+
+  // EMA Fast (acid green)
+  var sf = getOrCreate('sniper_ema_fast', 'line', {color:'rgba(200,255,0,0.7)',lineWidth:1,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+  sf.setData(toData(times, emaF));
+  // EMA Slow (fire red)
+  var ss = getOrCreate('sniper_ema_slow', 'line', {color:'rgba(255,69,32,0.7)',lineWidth:1,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+  ss.setData(toData(times, emaS));
+  // EMA Trend (subtle)
+  var st = getOrCreate('sniper_ema_trend', 'line', {color:'rgba(136,153,176,0.4)',lineWidth:1,lineStyle:LightweightCharts.LineStyle.Dashed,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+  st.setData(toData(times, emaT));
+
+  // Confluence scoring + signals
+  var markers = [];
+  var lastDir = 0;
+
+  for (var i = TREND + 5; i < bars.length; i++) {
+    var c = closes[i], ef = emaF[i], es = emaS[i], et = emaT[i];
+    if (!ef || !es || !et || !rsi[i] || !atr[i]) continue;
+
+    var mh = macdD.hist[i] || 0, mv = macdD.macd[i] || 0, ms = macdD.signal[i] || 0;
+
+    var bullScore = 0;
+    if (ef > es)         bullScore += 1;
+    if (c > et)          bullScore += 1;
+    if (rsi[i] > 50 && rsi[i] < 75) bullScore += 1;
+    if (mh > 0)          bullScore += 1;
+    if (mv > ms)         bullScore += 1;
+    if (c > ef)          bullScore += 0.5;
+
+    var bearScore = 0;
+    if (ef < es)         bearScore += 1;
+    if (c < et)          bearScore += 1;
+    if (rsi[i] < 50 && rsi[i] > 25) bearScore += 1;
+    if (mh < 0)          bearScore += 1;
+    if (mv < ms)         bearScore += 1;
+    if (c < ef)          bearScore += 0.5;
+
+    // EMA cross
+    var emaBullCross = ef > es && emaF[i-1] <= emaS[i-1];
+    var emaBearCross = ef < es && emaF[i-1] >= emaS[i-1];
+
+    var rawBuy  = emaBullCross && c > ef && c > es && rsi[i] < 75 && bullScore >= MIN_SCORE;
+    var rawSell = emaBearCross && c < ef && c < es && rsi[i] > 25 && bearScore >= MIN_SCORE;
+
+    var buy  = rawBuy  && lastDir !== 1;
+    var sell = rawSell && lastDir !== -1;
+
+    if (buy) {
+      lastDir = 1;
+      var grade = bullScore >= 8 ? 'A+' : bullScore >= 6.5 ? 'A' : 'B';
+      markers.push({time:times[i],position:'belowBar',color:'#2962ff',shape:'arrowUp',text:'Long '+grade,size:1});
+    } else if (sell) {
+      lastDir = -1;
+      var grade = bearScore >= 8 ? 'A+' : bearScore >= 6.5 ? 'A' : 'B';
+      markers.push({time:times[i],position:'aboveBar',color:'#ff5252',shape:'arrowDown',text:'Short '+grade,size:1});
+    }
+  }
+
+  var mSeries = getOrCreate('sniper_markers', 'line', {color:'transparent',lineWidth:0,priceLineVisible:false,lastValueVisible:false,visible:false});
+  try { mSeries.setMarkers(markers); } catch(e){}
+  lg('INFO','Precision Sniper rendered',markers.length+' signals','');
+}
+
+// ════════════════════════════════════════════════
+//  SMART MONEY CONCEPTS — Structure + FVG + OB
+// ════════════════════════════════════════════════
+function renderSMC(bars) {
+  var SWING_LEN = 5; // bars each side for swing detection
+  var times  = bars.map(function(b){return b.time;});
+  var closes = bars.map(function(b){return b.close;});
+  var highs  = bars.map(function(b){return b.high;});
+  var lows   = bars.map(function(b){return b.low;});
+
+  // ── Swing high/low detection ──────────────────────────────
+  // A swing high at i: high[i] > all highs in [i-n, i+n] except i
+  var swingHighs = []; // {idx, price, time}
+  var swingLows  = [];
+  var N = SWING_LEN;
+
+  for (var i = N; i < bars.length - N; i++) {
+    var isHigh = true, isLow = true;
+    for (var j = 1; j <= N; j++) {
+      if (highs[i] <= highs[i-j] || highs[i] <= highs[i+j]) isHigh = false;
+      if (lows[i]  >= lows[i-j]  || lows[i]  >= lows[i+j])  isLow  = false;
+    }
+    if (isHigh) swingHighs.push({idx:i, price:highs[i], time:times[i]});
+    if (isLow)  swingLows.push( {idx:i, price:lows[i],  time:times[i]});
+  }
+
+  // ── BOS / CHoCH detection ─────────────────────────────────
+  // Bullish BOS: close breaks above last swing high
+  // Bearish BOS: close breaks below last swing low
+  var markers = [];
+  var lastSwingHigh = null, lastSwingLow = null;
+  var swingTrend = 0; // 1 bull, -1 bear
+  var shIdx = 0, slIdx = 0;
+
+  // Structure lines storage
+  var bosLines = []; // {x1,y,x2,bull} — we'll plot as price lines temporarily
+
+  // Simple BOS detection from swing pivots
+  var lastBrokenHigh = null, lastBrokenLow = null;
+
+  for (var i = N; i < bars.length; i++) {
+    // Find most recent swing high/low before i
+    while (shIdx < swingHighs.length && swingHighs[shIdx].idx < i - 1) shIdx++;
+    while (slIdx < swingLows.length  && swingLows[slIdx].idx  < i - 1) slIdx++;
+
+    var prevHigh = shIdx > 0 ? swingHighs[shIdx-1] : null;
+    var prevLow  = slIdx > 0 ? swingLows[slIdx-1]  : null;
+
+    // Bullish BOS/CHoCH
+    if (prevHigh && closes[i] > prevHigh.price && lastBrokenHigh !== prevHigh.idx) {
+      lastBrokenHigh = prevHigh.idx;
+      var tag = swingTrend === -1 ? 'CHoCH' : 'BOS';
+      swingTrend = 1;
+      markers.push({
+        time:times[i], position:'aboveBar',
+        color:'#089981', shape:'arrowUp',
+        text:tag, size:0,
+      });
+    }
+    // Bearish BOS/CHoCH
+    if (prevLow && closes[i] < prevLow.price && lastBrokenLow !== prevLow.idx) {
+      lastBrokenLow = prevLow.idx;
+      var tag = swingTrend === 1 ? 'CHoCH' : 'BOS';
+      swingTrend = -1;
+      markers.push({
+        time:times[i], position:'belowBar',
+        color:'#f23645', shape:'arrowDown',
+        text:tag, size:0,
+      });
+    }
+  }
+
+  // ── Fair Value Gaps ───────────────────────────────────────
+  // Bullish FVG: low[i] > high[i-2]  (gap between candle i and i-2)
+  // Bearish FVG: high[i] < low[i-2]
+  var fvgBull = [], fvgBear = [];
+  for (var i = 2; i < bars.length; i++) {
+    if (lows[i] > highs[i-2]) {
+      // Bullish FVG — gap between bars[i-2].high and bars[i].low
+      fvgBull.push({top: lows[i], bot: highs[i-2], time: times[i-1]});
+    }
+    if (highs[i] < lows[i-2]) {
+      // Bearish FVG
+      fvgBear.push({top: lows[i-2], bot: highs[i], time: times[i-1]});
+    }
+  }
+
+  // Plot FVGs as price lines (last few only to avoid clutter)
+  var maxFVG = 3;
+  for (var f = Math.max(0, fvgBull.length - maxFVG); f < fvgBull.length; f++) {
+    var fvg = fvgBull[f];
+    var key = 'smc_fvg_bull_' + f;
+    if (!IV.series[key]) {
+      IV.series[key] = series.createPriceLine({
+        price:      (fvg.top + fvg.bot) / 2,
+        color:      'rgba(8,153,129,0.5)',
+        lineWidth:  4,
+        lineStyle:  LightweightCharts.LineStyle.Solid,
+        axisLabelVisible: false,
+        title:      'FVG↑',
+      });
+    }
+  }
+  for (var f = Math.max(0, fvgBear.length - maxFVG); f < fvgBear.length; f++) {
+    var fvg = fvgBear[f];
+    var key = 'smc_fvg_bear_' + f;
+    if (!IV.series[key]) {
+      IV.series[key] = series.createPriceLine({
+        price:      (fvg.top + fvg.bot) / 2,
+        color:      'rgba(242,54,69,0.5)',
+        lineWidth:  4,
+        lineStyle:  LightweightCharts.LineStyle.Solid,
+        axisLabelVisible: false,
+        title:      'FVG↓',
+      });
+    }
+  }
+
+  // ── Order Blocks ──────────────────────────────────────────
+  // Last bullish OB: the last bearish candle before a bullish BOS
+  // Last bearish OB: the last bullish candle before a bearish BOS
+  var obLines = [];
+  var atrArr = mathATR(bars, 14);
+
+  for (var i = 5; i < bars.length; i++) {
+    if (atrArr[i] === null) continue;
+    // Bullish OB: candle is bearish, followed by strong move up
+    var isBear = closes[i] < bars[i].open;
+    if (isBear && closes[i+1 < bars.length ? i+1 : i] > bars[i].high) {
+      obLines.push({bull:true, high:bars[i].high, low:bars[i].low, time:times[i]});
+    }
+    // Bearish OB: candle is bullish, followed by strong move down
+    var isBull = closes[i] > bars[i].open;
+    if (isBull && i+1 < bars.length && closes[i+1] < bars[i].low) {
+      obLines.push({bull:false, high:bars[i].high, low:bars[i].low, time:times[i]});
+    }
+  }
+
+  // Show last 3 OBs as price lines
+  var maxOB = 3;
+  var recentOBs = obLines.slice(-maxOB);
+  recentOBs.forEach(function(ob, idx) {
+    var key = 'smc_ob_' + idx;
+    var mid = (ob.high + ob.low) / 2;
+    var col = ob.bull ? 'rgba(49,121,245,0.6)' : 'rgba(247,124,128,0.6)';
+    IV.series[key] = series.createPriceLine({
+      price:      mid,
+      color:      col,
+      lineWidth:  6,
+      lineStyle:  LightweightCharts.LineStyle.Solid,
+      axisLabelVisible: true,
+      title:      ob.bull ? 'Bull OB' : 'Bear OB',
+    });
+  });
+
+  // ── Swing High/Low dots ───────────────────────────────────
+  var shDots = swingHighs.slice(-50).map(function(sh){return{time:sh.time,value:sh.price};});
+  var slDots = swingLows.slice(-50).map(function(sl){return{time:sl.time,value:sl.price};});
+
+  var sSH = getOrCreate('smc_swing_high','line',{color:'rgba(242,54,69,0.8)',lineWidth:0,pointMarkersVisible:true,pointMarkersRadius:3,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+  var sSL = getOrCreate('smc_swing_low','line',{color:'rgba(8,153,129,0.8)',lineWidth:0,pointMarkersVisible:true,pointMarkersRadius:3,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+  sSH.setData(shDots);
+  sSL.setData(slDots);
+
+  // BOS/CHoCH markers
+  var mSeries = getOrCreate('smc_markers','line',{color:'transparent',lineWidth:0,priceLineVisible:false,lastValueVisible:false,visible:false});
+  try { mSeries.setMarkers(markers.slice(-50)); } catch(e){}
+
+  lg('INFO','SMC rendered',swingHighs.length+' highs, '+swingLows.length+' lows','FVG:'+fvgBull.length+'/'+fvgBear.length);
+}
+
+// Boot init
+function initIndicators() {
+  syncIndButtons();
+}
 
 // BOOT
 (function boot(){
